@@ -98,10 +98,13 @@ common_variables() {
         ;;
     esac
 
+    # Detect initramfs type and set BUNDLES path
     if [ -d /run/initramfs/memory/bundles ]; then
+        # livekit initramfs
         BUNDLES=/run/initramfs/memory/bundles
-    elif [ -d /memory/bundles ]; then
-        BUNDLES=/memory/bundles
+    elif [ -d /lib/live/mount/bundles ]; then
+        # dracut initramfs
+        BUNDLES=/lib/live/mount/bundles
     fi
 
     if [[ -n "${LOCALES[$LOCALE]}" ]]; then
@@ -773,7 +776,10 @@ unmount_dirs() {
     local MOUNTS
     local FAILED=0
 
-    # Collect all mount points inside DIR_PATH
+    # Change to a safe directory to avoid CWD blocking unmount
+    cd / 2>/dev/null || true
+
+    # 1) Collect all mount points strictly inside DIR_PATH (deepest first)
     mapfile -t MOUNTS < <(
         findmnt -rn -o TARGET |
             while read -r TARGET; do
@@ -789,37 +795,91 @@ unmount_dirs() {
     )
 
     if [ "${#MOUNTS[@]}" -eq 0 ]; then
-        information "No mount points found under ${DIR_PATH}."
+        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+            information "No mount points found under ${DIR_PATH}."
+        fi
         return 0
     fi
 
-    # Attempt to unmount each mount point
-    for MOUNT in "${MOUNTS[@]}"; do
-        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
-            information "Processing mount point: ${MOUNT}"
-            information "Attempting to unmount ${MOUNT}..."
-        fi
+    local MAX_PASSES=3
+    local PASS=1
+    local TO_UNMOUNT=("${MOUNTS[@]}")
 
-        if umount "${MOUNT}" 2>/dev/null; then
-            information "Successfully unmounted ${MOUNT}."
-        else
-            error "Could not unmount ${MOUNT}."
-            ((FAILED++))
+    while [ "$PASS" -le "$MAX_PASSES" ] && [ "${#TO_UNMOUNT[@]}" -gt 0 ]; do
+        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+            information "Pass $PASS: attempting to unmount ${#TO_UNMOUNT[@]} point(s)..."
+        fi
+        local NEXT=()
+        for MOUNT in "${TO_UNMOUNT[@]}"; do
+            if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                information "Processing ${MOUNT} (pass $PASS)"
+            fi
+
+            # Check if mount point is still mounted before attempting to unmount
+            if findmnt "${MOUNT}" >/dev/null 2>&1; then
+                if umount "${MOUNT}" 2>/dev/null; then
+                    if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                        information "Successfully unmounted ${MOUNT}."
+                    fi
+                else
+                    # Double-check if it's still mounted after failed umount
+                    # (it might have been unmounted by another process between checks)
+                    if findmnt "${MOUNT}" >/dev/null 2>&1; then
+                        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                            warning "Could not unmount ${MOUNT} on pass $PASS; will retry."
+                        fi
+                        NEXT+=("${MOUNT}")
+                    else
+                        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                            information "Mount point ${MOUNT} was unmounted between checks, skipping."
+                        fi
+                    fi
+                fi
+            else
+                if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                    information "Mount point ${MOUNT} is already unmounted, skipping."
+                fi
+            fi
+        done
+        TO_UNMOUNT=("${NEXT[@]}")
+        ((PASS++))
+
+        # Add a delay between passes to allow processes to release resources
+        if [ "$PASS" -le "$MAX_PASSES" ] && [ "${#TO_UNMOUNT[@]}" -gt 0 ]; then
+            sleep 1
         fi
     done
 
-    # 3) Final status report
-    if [ "$FAILED" -gt 0 ]; then
-        error "Failed to unmount ${FAILED} mount point(s). Remaining mounted:"
-        for MOUNT in "${MOUNTS[@]}"; do
-            if mountpoint -q "${MOUNT}"; then
-                warning "  * ${MOUNT}"
+    # If still unable to unmount after MAX_PASSES, try lazy unmount as a last resort
+    if [ "${#TO_UNMOUNT[@]}" -gt 0 ]; then
+        if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+            warning "Attempting lazy unmount for remaining ${#TO_UNMOUNT[@]} point(s)..."
+        fi
+        local LAZY_FAILED=()
+        for MOUNT in "${TO_UNMOUNT[@]}"; do
+            if findmnt "${MOUNT}" >/dev/null 2>&1; then
+                if umount -l "${MOUNT}" 2>/dev/null; then
+                    if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+                        information "Successfully lazy-unmounted ${MOUNT}."
+                    fi
+                else
+                    LAZY_FAILED+=("${MOUNT}")
+                fi
             fi
         done
-        return 1
+
+        if [ "${#LAZY_FAILED[@]}" -gt 0 ]; then
+            error "Failed to unmount ${#LAZY_FAILED[@]} point(s) even with lazy unmount. Remaining:"
+            for M in "${LAZY_FAILED[@]}"; do
+                warning "  * ${M}"
+            done
+            return 1
+        fi
     fi
 
-    information "All file systems under ${DIR_PATH} have been successfully unmounted."
+    if [ ${VERBOSITY_LEVEL:-1} -ge 2 ]; then
+        information "All file systems under ${DIR_PATH} have been successfully unmounted."
+    fi
     return 0
 }
 
@@ -1091,6 +1151,7 @@ KERNEL_FLAVOUR="${KERNEL_FLAVOUR}"
 KERNEL_AUFS="${KERNEL_AUFS}"
 KERNEL_BUILD_ARCH="${KERNEL_BUILD_ARCH}"
 KERNEL_BUILD_DKMS="${KERNEL_BUILD_DKMS}"
+INITRAMFS_BUILDER="${INITRAMFS_BUILDER}"
 
 # Locale, timezone, layout settings
 LOCALE="${LOCALE}"
@@ -1529,6 +1590,38 @@ create_config_files() {
         esac
     }
 
+    get_language_timezone() {
+        local LANG="$1"
+        case "$LANG" in
+        en_US) echo "Etc/UTC" ;;
+        ru_RU) echo "Europe/Moscow" ;;
+        de_DE) echo "Europe/Berlin" ;;
+        es_ES) echo "Europe/Madrid" ;;
+        fr_FR) echo "Europe/Paris" ;;
+        id_ID) echo "Asia/Jakarta" ;;
+        it_IT) echo "Europe/Rome" ;;
+        pt_BR) echo "America/Sao_Paulo" ;;
+        pt_PT) echo "Europe/Lisbon" ;;
+        *) echo "Etc/UTC" ;;
+        esac
+    }
+
+    get_language_keyboard() {
+        local LANG="$1"
+        case "$LANG" in
+        en_US) echo "us" ;;
+        ru_RU) echo "us,ru" ;;
+        de_DE) echo "us,de" ;;
+        es_ES) echo "us,es" ;;
+        fr_FR) echo "us,fr" ;;
+        id_ID) echo "id" ;;
+        it_IT) echo "us,it" ;;
+        pt_BR) echo "us,br" ;;
+        pt_PT) echo "us,pt" ;;
+        *) echo "us" ;;
+        esac
+    }
+
     # Create SYSLINUX configuration based on bootloader choice
     if [ "${BOOTLOADER}" = "syslinux-grub" ] || [ "${BOOTLOADER}" = "syslinux-native" ]; then
         mkdir -p "${WORK_DIR}/image/${LIVEKITNAME}/boot/syslinux"
@@ -1544,18 +1637,18 @@ PROMPT 0
 TIMEOUT 100
 
 MENU CLEAR
-MENU BACKGROUND ../bootlogo.png
-MENU RESOLUTION 1024 768
+MENU BACKGROUND ../bootlogo788.png
+MENU RESOLUTION 800 600
 
-MENU WIDTH 125
-MENU MARGIN 20
+MENU WIDTH 97
+MENU MARGIN 15
 MENU ROWS 9
-MENU TABMSGROW 31
-MENU CMDLINEROW 27
+MENU TABMSGROW 26
+MENU CMDLINEROW 21
 MENU HSHIFT 0
-MENU VSHIFT 15
-MENU HELPMSGENDROW 32
-MENU TIMEOUTROW 28
+MENU VSHIFT 10
+MENU HELPMSGENDROW 27
+MENU TIMEOUTROW 22
 
 MENU COLOR BORDER  30;40      #00000000 #00000000 none
 MENU COLOR SEL     47;30      #FF000000 #40FFFFFF none
@@ -1623,6 +1716,15 @@ EOF
             local MO_FILE="${WORK_DIR}/image/${LIVEKITNAME}/boot/grub/locale/${CURRENT_LANG}.mo"
             local FONT_FILE=$(get_language_font "$CURRENT_LANG")
             local LOCALE_UTF="${CURRENT_LANG}.UTF-8"
+
+            # For English, don't set timezone and keyboard (use config.conf defaults)
+            if [ "$CURRENT_LANG" = "en_US" ]; then
+                local TIMEZONE=""
+                local KEYBOARD=""
+            else
+                local TIMEZONE=$(get_language_timezone "$CURRENT_LANG")
+                local KEYBOARD=$(get_language_keyboard "$CURRENT_LANG")
+            fi
 
             # Extract translations from mo file if it exists
             local RESUME="Resume previous session"
@@ -1694,18 +1796,18 @@ TIMEOUT 100
 MENU CLEAR
 MENU HIDDEN
 MENU HIDDENKEY Enter default
-MENU BACKGROUND ../bootlogo.png
-MENU RESOLUTION 1024 768
+MENU BACKGROUND ../bootlogo788.png
+MENU RESOLUTION 800 600
 
-MENU WIDTH 125
-MENU MARGIN 20
+MENU WIDTH 97
+MENU MARGIN 15
 MENU ROWS 5
-MENU TABMSGROW 31
-MENU CMDLINEROW 27
+MENU TABMSGROW 24
+MENU CMDLINEROW 21
 MENU HSHIFT 0
-MENU VSHIFT 15
-MENU HELPMSGENDROW 32
-MENU TIMEOUTROW 28
+MENU VSHIFT 12
+MENU HELPMSGENDROW 25
+MENU TIMEOUTROW 22
 
 MENU COLOR BORDER  30;40      #00000000 #00000000 none
 MENU COLOR SEL     47;30      #FF000000 #40FFFFFF none
@@ -1720,27 +1822,27 @@ MENU TABMSG ${F1_HELP}                                                        ${
 LABEL default
 MENU LABEL ${RESUME}
 KERNEL /${LIVEKITNAME}/boot/${VMLINUZNAME}
-APPEND vga=791 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=resume locales=${LOCALE_UTF}
+APPEND vga=788 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=resume locales=${LOCALE_UTF}$([ -n "${TIMEZONE}" ] && echo " timezone=${TIMEZONE}")$([ -n "${KEYBOARD}" ] && echo " keyboard-layouts=${KEYBOARD}")
 
 LABEL perch
 MENU LABEL ${START_NEW}
 KERNEL /${LIVEKITNAME}/boot/${VMLINUZNAME}
-APPEND vga=791 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=new locales=${LOCALE_UTF}
+APPEND vga=788 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=new locales=${LOCALE_UTF}$([ -n "${TIMEZONE}" ] && echo " timezone=${TIMEZONE}")$([ -n "${KEYBOARD}" ] && echo " keyboard-layouts=${KEYBOARD}")
 
 LABEL asksession
 MENU LABEL ${CHOOSE_SESSION}
 KERNEL /${LIVEKITNAME}/boot/${VMLINUZNAME}
-APPEND vga=791 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=ask locales=${LOCALE_UTF}
+APPEND vga=788 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=ask locales=${LOCALE_UTF}$([ -n "${TIMEZONE}" ] && echo " timezone=${TIMEZONE}")$([ -n "${KEYBOARD}" ] && echo " keyboard-layouts=${KEYBOARD}")
 
 LABEL live
 MENU LABEL ${FRESH_START}
 KERNEL /${LIVEKITNAME}/boot/${VMLINUZNAME}
-APPEND vga=791 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} locales=${LOCALE_UTF}
+APPEND vga=788 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} locales=${LOCALE_UTF}$([ -n "${TIMEZONE}" ] && echo " timezone=${TIMEZONE}")$([ -n "${KEYBOARD}" ] && echo " keyboard-layouts=${KEYBOARD}")
 
 LABEL toram
 MENU LABEL ${COPY_RAM}
 KERNEL /${LIVEKITNAME}/boot/${VMLINUZNAME}
-APPEND vga=791 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} toram locales=${LOCALE_UTF}
+APPEND vga=788 initrd=/${LIVEKITNAME}/boot/${INITRFSNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} toram locales=${LOCALE_UTF}$([ -n "${TIMEZONE}" ] && echo " timezone=${TIMEZONE}")$([ -n "${KEYBOARD}" ] && echo " keyboard-layouts=${KEYBOARD}")
 
 EOF
             ) | if [ -n "$ENCODING" ] && command -v iconv >/dev/null 2>&1; then
@@ -1781,27 +1883,128 @@ insmod regexp
 insmod gettext
 set localedir=\$prefix/locale
 
+# Detect lockdown mode (Secure Boot)
+set lockdown=n
+insmod font
+if ! loadfont \$prefix/unicode.pf2 ; then
+    set lockdown=y
+fi
+
 # Language selection (title in theme)
 
 # Language selection
-for langstr in en_US=English ru_RU=Русский de_DE=Deutsch es_ES=Español fr_FR=Français id_ID="Bahasa Indonesia" it_IT=Italiano pt_BR="Português (Brasil)" pt_PT="Português (Portugal)" ; do
-    regexp -s 2:langname -s 1:langcode '(.*)=(.*)' "\$langstr"
-    menuentry "\${langname}" "\$langcode" {
-        lang=\$2
-        lang_utf="\${2}.UTF-8"
-        export lang
-        export lang_utf
-        configfile /${LIVEKITNAME}/boot/grub/main.cfg
-    }
-done
+menuentry "English" {
+    lang="en_US"
+    lang_utf="en_US.UTF-8"
+    lang_timezone=""
+    lang_keyboard=""
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Русский" {
+    lang="ru_RU"
+    lang_utf="ru_RU.UTF-8"
+    lang_timezone="Europe/Moscow"
+    lang_keyboard="us,ru"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Deutsch" {
+    lang="de_DE"
+    lang_utf="de_DE.UTF-8"
+    lang_timezone="Europe/Berlin"
+    lang_keyboard="us,de"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Español" {
+    lang="es_ES"
+    lang_utf="es_ES.UTF-8"
+    lang_timezone="Europe/Madrid"
+    lang_keyboard="us,es"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Français" {
+    lang="fr_FR"
+    lang_utf="fr_FR.UTF-8"
+    lang_timezone="Europe/Paris"
+    lang_keyboard="us,fr"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Bahasa Indonesia" {
+    lang="id_ID"
+    lang_utf="id_ID.UTF-8"
+    lang_timezone="Asia/Jakarta"
+    lang_keyboard="id"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Italiano" {
+    lang="it_IT"
+    lang_utf="it_IT.UTF-8"
+    lang_timezone="Europe/Rome"
+    lang_keyboard="us,it"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Português (Brasil)" {
+    lang="pt_BR"
+    lang_utf="pt_BR.UTF-8"
+    lang_timezone="America/Sao_Paulo"
+    lang_keyboard="us,br"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
+menuentry "Português (Portugal)" {
+    lang="pt_PT"
+    lang_utf="pt_PT.UTF-8"
+    lang_timezone="Europe/Lisbon"
+    lang_keyboard="us,pt"
+    export lang
+    export lang_utf
+    export lang_timezone
+    export lang_keyboard
+    configfile /${LIVEKITNAME}/boot/grub/main.cfg
+}
 
 # Help text handled by theme
 
-loadfont \$prefix/dejavu-bold-16.pf2
-loadfont \$prefix/dejavu-bold-14.pf2
-loadfont \$prefix/roboto-bold-20.pf2
-loadfont \$prefix/roboto-regular-20.pf2
-loadfont \$prefix/unicode.pf2
+# Load fonts
+if [ "\$lockdown" = "y" ]; then
+    loadfont (memdisk)/fonts/unicode.pf2
+else
+    loadfont \$prefix/dejavu-bold-16.pf2
+    loadfont \$prefix/dejavu-bold-14.pf2
+    loadfont \$prefix/roboto-bold-20.pf2
+    loadfont \$prefix/roboto-regular-20.pf2
+    loadfont \$prefix/unicode.pf2
+fi
 
 if [ "\$grub_platform" = "pc" ]; then
     set gfxmode=1024x768x32
@@ -1818,7 +2021,7 @@ insmod png
 set color_normal=light-gray/black
 set color_highlight=white/black
 
-if [ -e /minios/boot/bootlogo.png ]; then
+if [ -e /minios/boot/bootlogo791.png ]; then
     set theme=/minios/boot/grub/minios-theme/theme.txt
 else
     set color_normal=white/black
@@ -1826,9 +2029,6 @@ else
 fi
 
 terminal_output gfxterm
-
-insmod play
-play 960 440 1 0 4 440 1
 
 EOF
 
@@ -1842,9 +2042,17 @@ insmod regexp
 insmod gettext
 set localedir=\$prefix/locale
 
-# Use exported language variables or default to English
-if [ -z "\$lang_utf" ]; then
-    set lang_utf="en_US.UTF-8"
+# Build extra boot parameters (timezone and keyboard) only if set
+set extra_params=""
+if [ -n "\$lang_timezone" ]; then
+    set extra_params="timezone=\$lang_timezone"
+fi
+if [ -n "\$lang_keyboard" ]; then
+    if [ -n "\$extra_params" ]; then
+        set extra_params="\$extra_params keyboard-layouts=\$lang_keyboard"
+    else
+        set extra_params="keyboard-layouts=\$lang_keyboard"
+    fi
 fi
 
 # Set GRUB language for gettext
@@ -1871,11 +2079,25 @@ export copyram
 export backtolang
 export loading
 
-loadfont \$prefix/dejavu-bold-16.pf2
-loadfont \$prefix/dejavu-bold-14.pf2
-loadfont \$prefix/roboto-bold-20.pf2
-loadfont \$prefix/roboto-regular-20.pf2
-loadfont \$prefix/unicode.pf2
+# Detect lockdown mode (Secure Boot) if not already set
+if [ -z "\$lockdown" ]; then
+    set lockdown=n
+    insmod font
+    if ! loadfont \$prefix/unicode.pf2 ; then
+        set lockdown=y
+    fi
+fi
+
+# Load fonts
+if [ "\$lockdown" = "y" ]; then
+    loadfont (memdisk)/fonts/unicode.pf2
+else
+    loadfont \$prefix/dejavu-bold-16.pf2
+    loadfont \$prefix/dejavu-bold-14.pf2
+    loadfont \$prefix/roboto-bold-20.pf2
+    loadfont \$prefix/roboto-regular-20.pf2
+    loadfont \$prefix/unicode.pf2
+fi
 
 if [ "\$grub_platform" = "pc" ]; then
     set gfxmode=1024x768x32
@@ -1896,14 +2118,14 @@ set color_highlight=white/black
 if [ -n "\$lang" ]; then
     if [ -e /${LIVEKITNAME}/boot/grub/minios-theme/theme_\$lang.txt ]; then
         set theme=/${LIVEKITNAME}/boot/grub/minios-theme/theme_\$lang.txt
-    elif [ -e /${LIVEKITNAME}/boot/bootlogo.png ]; then
+    elif [ -e /${LIVEKITNAME}/boot/bootlogo791.png ]; then
         set theme=/${LIVEKITNAME}/boot/grub/minios-theme/theme.txt
     else
         set color_normal=white/black
         set color_highlight=black/white
     fi
 else
-    if [ -e /${LIVEKITNAME}/boot/bootlogo.png ]; then
+    if [ -e /${LIVEKITNAME}/boot/bootlogo791.png ]; then
         set theme=/${LIVEKITNAME}/boot/grub/minios-theme/theme.txt
     else
         set color_normal=white/black
@@ -1913,42 +2135,39 @@ fi
 
 terminal_output gfxterm
 
-insmod play
-play 960 440 1 0 4 440 1
-
 menuentry "\$resume" --class resume {
     echo \$loading
     search --set -f /${LIVEKITNAME}/boot/${VMLINUZNAME}
     set gfxpayload=\$gfxpayload
-    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=resume locales=\$lang_utf
+    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=resume locales=\$lang_utf \$extra_params
     initrd /${LIVEKITNAME}/boot/${INITRFSNAME}
 }
 menuentry "\$newsession" --class new {
     echo \$loading
     search --set -f /${LIVEKITNAME}/boot/${VMLINUZNAME}
     set gfxpayload=\$gfxpayload
-    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=new locales=\$lang_utf
+    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=new locales=\$lang_utf \$extra_params
     initrd /${LIVEKITNAME}/boot/${INITRFSNAME}
 }
 menuentry "\$choosesession" --class switch {
     echo \$loading
     search --set -f /${LIVEKITNAME}/boot/${VMLINUZNAME}
     set gfxpayload=\$gfxpayload
-    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=ask locales=\$lang_utf
+    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} perchdir=ask locales=\$lang_utf \$extra_params
     initrd /${LIVEKITNAME}/boot/${INITRFSNAME}
 }
 menuentry "\$freshstart" --class live {
     echo \$loading
     search --set -f /${LIVEKITNAME}/boot/${VMLINUZNAME}
     set gfxpayload=\$gfxpayload
-    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} locales=\$lang_utf
+    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} locales=\$lang_utf \$extra_params
     initrd /${LIVEKITNAME}/boot/${INITRFSNAME}
 }
 menuentry "\$copyram" --class ram {
     echo \$loading
     search --set -f /${LIVEKITNAME}/boot/${VMLINUZNAME}
     set gfxpayload=\$gfxpayload
-    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} toram locales=\$lang_utf
+    linux /${LIVEKITNAME}/boot/${VMLINUZNAME} ${DEFAULT_SETTINGS} ${BOOT_SETTINGS} toram locales=\$lang_utf \$extra_params
     initrd /${LIVEKITNAME}/boot/${INITRFSNAME}
 }
 
@@ -1960,11 +2179,23 @@ set default=0
 set timeout=10
 set message="Loading kernel and ramdisk..."
 
-loadfont \$prefix/dejavu-bold-16.pf2
-loadfont \$prefix/dejavu-bold-14.pf2
-loadfont \$prefix/roboto-bold-20.pf2
-loadfont \$prefix/roboto-regular-20.pf2
-loadfont \$prefix/unicode.pf2
+# Detect lockdown mode (Secure Boot)
+set lockdown=n
+insmod font
+if ! loadfont \$prefix/unicode.pf2 ; then
+    set lockdown=y
+fi
+
+# Load fonts
+if [ "\$lockdown" = "y" ]; then
+    loadfont (memdisk)/fonts/unicode.pf2
+else
+    loadfont \$prefix/dejavu-bold-16.pf2
+    loadfont \$prefix/dejavu-bold-14.pf2
+    loadfont \$prefix/roboto-bold-20.pf2
+    loadfont \$prefix/roboto-regular-20.pf2
+    loadfont \$prefix/unicode.pf2
+fi
 
 if [ "\$grub_platform" = "pc" ]; then
     set gfxmode=1024x768x32
@@ -1981,7 +2212,7 @@ insmod png
 set color_normal=light-gray/black
 set color_highlight=white/black
 
-if [ -e /minios/boot/bootlogo.png ]; then
+if [ -e /minios/boot/bootlogo791.png ]; then
     set theme=/minios/boot/grub/minios-theme/theme.txt
 else
     set color_normal=white/black
@@ -1989,9 +2220,6 @@ else
 fi
 
 terminal_output gfxterm
-
-insmod play
-play 960 440 1 0 4 440 1
 
 menuentry "Resume previous session" --class resume {
     echo \$message
@@ -2075,6 +2303,14 @@ build_initrd() {
 
     cp "${OVERLAY[merged]}/boot/vmlinuz"-* "${WORK_DIR}/image/${LIVEKITNAME}/boot/${VMLINUZNAME}"
     cp "${OVERLAY[merged]}/boot/initrfs.img" "${WORK_DIR}/image/${LIVEKITNAME}/boot/${INITRFSNAME}"
+
+    # Create compatibility symlinks for Ventoy
+    if [ "$NAMED_BOOT_FILES" = "true" ]; then
+        cd "${WORK_DIR}/image/${LIVEKITNAME}/boot"
+        ln -sf "${VMLINUZNAME}" "vmlinuz" 2>/dev/null || true
+        ln -sf "${INITRFSNAME}" "initrfs.img" 2>/dev/null || true
+        cd - >/dev/null
+    fi
 
     overlay_chroot_finish_up
 
@@ -2363,6 +2599,48 @@ generate_localized_grub_config() {
     if [ -e "$GRUB_DIR/minios-theme/theme_${LANG_CODE}.txt" ]; then
         # Replace theme setting with localized version
         LOCALIZED_CONTENT=$(echo "$LOCALIZED_CONTENT" | sed "s|set theme=/minios/boot/grub/minios-theme/theme\.txt|set theme=$THEME_PATH|g")
+    fi
+
+    # Add locale, timezone and keyboard parameters to kernel command line
+    local LOCALE_UTF="${LANG_CODE}.UTF-8"
+    local EXTRA_PARAMS=""
+
+    # Map language codes to timezone and keyboard settings (based on grub.multilang.cfg)
+    case "$LANG_CODE" in
+        en_US)
+            # No extra params for English
+            ;;
+        ru_RU)
+            EXTRA_PARAMS="timezone=Europe/Moscow keyboard-layouts=us,ru"
+            ;;
+        de_DE)
+            EXTRA_PARAMS="timezone=Europe/Berlin keyboard-layouts=us,de"
+            ;;
+        es_ES)
+            EXTRA_PARAMS="timezone=Europe/Madrid keyboard-layouts=us,es"
+            ;;
+        fr_FR)
+            EXTRA_PARAMS="timezone=Europe/Paris keyboard-layouts=us,fr"
+            ;;
+        id_ID)
+            EXTRA_PARAMS="timezone=Asia/Jakarta keyboard-layouts=id"
+            ;;
+        it_IT)
+            EXTRA_PARAMS="timezone=Europe/Rome keyboard-layouts=us,it"
+            ;;
+        pt_BR)
+            EXTRA_PARAMS="timezone=America/Sao_Paulo keyboard-layouts=us,br"
+            ;;
+        pt_PT)
+            EXTRA_PARAMS="timezone=Europe/Lisbon keyboard-layouts=us,pt"
+            ;;
+    esac
+
+    # Add locales parameter and extra params to all linux command lines
+    if [ -n "$EXTRA_PARAMS" ]; then
+        LOCALIZED_CONTENT=$(echo "$LOCALIZED_CONTENT" | sed -E "s|(linux .*/vmlinuz[^ ]* .*)|\1 locales=${LOCALE_UTF} ${EXTRA_PARAMS}|g")
+    else
+        LOCALIZED_CONTENT=$(echo "$LOCALIZED_CONTENT" | sed -E "s|(linux .*/vmlinuz[^ ]* .*)|\1 locales=${LOCALE_UTF}|g")
     fi
 
     # Write localized config

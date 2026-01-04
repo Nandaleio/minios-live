@@ -10,10 +10,10 @@ With `minios-cmd`, you can customize various aspects of your MiniOS image, inclu
 
 - **Distribution:** Choose from Debian releases (`buster`, `bullseye`, `bookworm`, `trixie`) and Ubuntu releases (`jammy`, `noble`)
 - **Architecture:** Specify the target architecture (`amd64`, `i386` for older distributions)
-- **Desktop Environment:** 
+- **Desktop Environment:**
   - **Debian:** `xfce` (standard), `flux` (minimum), `lxqt` (bookworm/trixie only)
   - **Ubuntu:** `xfce` only
-- **Package Variant:** 
+- **Package Variant:**
   - **All Debian:** `standard` (xfce), `minimum` (flux)
   - **Bookworm/Trixie only:** `toolbox`, `ultra`
   - **Ubuntu:** `standard` only
@@ -46,14 +46,13 @@ minios-cmd [OPTIONS]
 These options **must be provided** unless a configuration file is used:
 
 - `-d, --distribution NAME`: Specify the distribution name (e.g., 'bookworm'). **REQUIRED**
-- `-a, --architecture NAME`: Specify the architecture (e.g., 'amd64'). **REQUIRED** 
+- `-a, --architecture NAME`: Specify the architecture (e.g., 'amd64'). **REQUIRED**
 - `-de, --desktop-environment NAME`: Specify the desktop environment (e.g., 'xfce'). **REQUIRED**
 - `-pv, --package-variant NAME`: Specify the package variant (e.g., 'standard'). **REQUIRED**
 - `-c, --compression-type NAME`: Specify the compression type (e.g., 'zstd').
 
 #### Kernel Options
 - `-kf, --kernel-flavour NAME`: Specify the kernel flavour (e.g., 'none').
-- `-bpo, --kernel-backports`: Enable the use of the Linux kernel from backports.
 - `-aufs, --kernel-aufs`: Enable AUFS support in the kernel.
 - `-dkms, --kernel-build-dkms`: Enable compilation of additional drivers during kernel installation.
 
@@ -63,6 +62,12 @@ These options **must be provided** unless a configuration file is used:
 - `-kl, --keep-locales`: Keep all available locales.
 - `-tz, --timezone NAME`: Specify the timezone (e.g., 'Etc/UTC').
 
+#### Boot Loader Options
+- `-ib, --initramfs-builder NAME`: Specify the initramfs builder ('livekit' or 'dracut').
+
+#### Boot Menu Options
+- `-mln, --menu-language NAME`: Specify the boot menu language ('multilang' for language selection or specific language code like 'ru_RU').
+
 ---
 
 ### Default Settings
@@ -70,9 +75,15 @@ These options **must be provided** unless a configuration file is used:
 #### Kernel Settings
 - **KERNEL_FLAVOUR:** "none"
 
-#### Locale & Timezone Settings  
+#### Locale & Timezone Settings
 - **LOCALE:** "en_US"
 - **LIVE_TIMEZONE:** "Etc/UTC"
+
+#### Boot Loader Settings
+- **INITRAMFS_BUILDER:** "dracut"
+
+#### Boot Menu Settings
+- **MENU_LANG:** "multilang"
 
 ---
 
@@ -119,13 +130,6 @@ Create a system image for 32-bit architecture:
 minios-cmd -d buster -a i386 -de xfce -pv standard
 ```
 
-#### Kernel Backports
-Enable the kernel from backports:
-
-```bash
-minios-cmd -d bookworm -a amd64 -de xfce -pv standard -bpo
-```
-
 #### Ubuntu Distribution
 Create a system image with Ubuntu Jammy:
 
@@ -138,6 +142,20 @@ Enable multilingual support (generates locales for English, Spanish, German, Fre
 
 ```bash
 minios-cmd -d trixie -a amd64 -de xfce -pv standard -ml
+```
+
+#### Boot Menu Language
+Create a system image with Russian boot menu language:
+
+```bash
+minios-cmd -d bookworm -a amd64 -de xfce -pv standard -mln ru_RU
+```
+
+#### Livekit Initramfs Builder
+Create a system image with livekit initramfs builder (smaller size):
+
+```bash
+minios-cmd -d bookworm -a amd64 -de flux -pv standard -ib livekit
 ```
 
 ---

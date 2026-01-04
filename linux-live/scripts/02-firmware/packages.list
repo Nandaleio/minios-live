@@ -5,6 +5,7 @@ firmware-atheros -dt=ubuntu
 firmware-iwlwifi -dt=ubuntu
 firmware-zd1211 -dt=ubuntu
 firmware-realtek -dt=ubuntu
+firmware-mediatek -dt=ubuntu +d=trixie
 firmware-bnx2 -dt=ubuntu
 firmware-brcm80211 -dt=ubuntu
 firmware-cavium -dt=ubuntu
@@ -12,7 +13,7 @@ firmware-ipw2x00 -dt=ubuntu
 firmware-libertas -dt=ubuntu
 firmware-ti-connectivity -dt=ubuntu
 firmware-b43-installer -d=bionic -dt=ubuntu
-firmware-sof-signed -da=i386 -dt=ubuntu
+firmware-sof-signed -da=i386 -dt=ubuntu -{pv=minimum&de=xfce}
 
 # Ubuntu firmware packages
 linux-firmware +dt=ubuntu

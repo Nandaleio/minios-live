@@ -224,12 +224,12 @@ create_bundle() {
 }
 
 # Move entire initramfs tree to tmpfs mount.
-# It's a bit tricky but is necessray to enable pivot_root
+# It's a bit tricky but is necessary to enable pivot_root
 # even for initramfs boot image
 #
 transfer_initramfs() {
    if [ ! -r /lib/initramfs_escaped ]; then
-      echo "switch root from initramfs to ramfs"
+      #echo "switch root from initramfs to ramfs"
       SWITCH=/m # one letter directory
       mkdir -p $SWITCH
       mount -t tmpfs -o size="100%" tmpfs $SWITCH
@@ -237,6 +237,47 @@ transfer_initramfs() {
       cd $SWITCH
       echo "This file indicates that we successfully escaped initramfs" >$SWITCH/lib/initramfs_escaped
       exec switch_root -c /dev/console . $0
+   fi
+}
+
+# Dracut-adapted transfer_initramfs
+#
+transfer_initramfs_dracut() {
+   if [ ! -r /lib/initramfs_escaped ]; then
+      SWITCH=/m
+      mkdir -p $SWITCH
+      mount -t tmpfs -o size="100%" tmpfs $SWITCH
+
+      # Copy all content from root, excluding special filesystems
+      for item in /*; do
+         case "$item" in
+         /dev | /proc | /sys | /run | /m) continue ;; # Skip special filesystems and SWITCH dir
+         *) cp -a "$item" $SWITCH/ 2>/dev/null ;;
+         esac
+      done
+
+      # Create mount points for special filesystems
+      mkdir -p $SWITCH/dev $SWITCH/proc $SWITCH/sys $SWITCH/run
+
+      # Move special filesystems to new location
+      cd $SWITCH
+      mount --move /dev $SWITCH/dev 2>/dev/null || mount --bind /dev $SWITCH/dev
+      mount --move /proc $SWITCH/proc 2>/dev/null || mount --bind /proc $SWITCH/proc
+      mount --move /sys $SWITCH/sys 2>/dev/null || mount --bind /sys $SWITCH/sys
+      mount --move /run $SWITCH/run 2>/dev/null || mount --bind /run $SWITCH/run
+
+      echo "This file indicates that we successfully escaped initramfs" >$SWITCH/lib/initramfs_escaped
+
+      # Suppress stderr before switch_root to hide udev mknod "File exists" errors
+      exec 2>/dev/null
+
+      # Use dracut's switch_root
+      exec switch_root . $0
+   fi
+
+   # Restore stderr after transfer (udev has settled by now)
+   if [ -r /lib/initramfs_escaped ]; then
+      exec 2>&1
    fi
 }
 
@@ -282,6 +323,7 @@ init_devs() {
    modprobe loop 2>/dev/null
    modprobe squashfs 2>/dev/null
    modprobe fuse 2>/dev/null
+   modprobe ext4 2>/dev/null
    refresh_devs
 }
 
@@ -844,7 +886,10 @@ find_data() {
       DATA="$(find_data_try "$2" "$FROM")"
       if [ "$DATA" != "" ]; then
          echo "" >&2 >/dev/tty1
-         echo "* Found on $(mounted_device "$2")" >&2 >/dev/tty1
+         # Use df to get device for DATA path, fallback to mounted_device for mount point
+         DEVICE="$(df "$DATA" 2>/dev/null | tail -n 1 | awk '{print $1}')"
+         [ -z "$DEVICE" ] && DEVICE="$(mounted_device "$2")"
+         echo "* Found on $DEVICE" >&2 >/dev/tty1
          echo "$DATA"
          return
       fi
@@ -1369,6 +1414,46 @@ persistent_changes() {
    PERCHMODE="$(cmdline_value perchmode)"
    PERCHSIZE="$(cmdline_value perchsize)"
    : "${PERCHSIZE:=0}"
+
+   # Parse size with units (MB, GB, TB) and convert to MB
+   parse_size() {
+      local SIZE="$1"
+      local NUMBER UNIT
+
+      # Remove any whitespace
+      SIZE=$(echo "$SIZE" | tr -d ' ')
+
+      # Extract number and unit
+      NUMBER=$(echo "$SIZE" | sed 's/[A-Za-z]*$//')
+      UNIT=$(echo "$SIZE" | sed 's/^[0-9]*//' | tr '[:lower:]' '[:upper:]')
+
+      # Validate number
+      if ! echo "$NUMBER" | grep -q '^[0-9]\+$'; then
+         echo "0"
+         return
+      fi
+
+      # Convert to MB based on unit
+      case "$UNIT" in
+      "" | "M" | "MB")
+         echo "$NUMBER"
+         ;;
+      "G" | "GB")
+         echo $((NUMBER * 1000))
+         ;;
+      "T" | "TB")
+         echo $((NUMBER * 1000000))
+         ;;
+      *)
+         echo "0"
+         ;;
+      esac
+   }
+
+   # Parse PERCHSIZE if it contains units
+   if [ "$PERCHSIZE" != "0" ] && echo "$PERCHSIZE" | grep -q '[A-Za-z]'; then
+      PERCHSIZE=$(parse_size "$PERCHSIZE")
+   fi
    CHANDIR="$DATA/$(basename "$CHANGES")"
    DRIVE="$(df "$DATA" | tail -n 1 | awk '{print $1}')"
 
@@ -1429,6 +1514,9 @@ persistent_changes() {
       fi
 
       MAX_SIZE=$((AVAILABLE_SPACE - 100))
+
+      # Limit maximum size to 1TB (1,000,000 MB)
+      [ "$MAX_SIZE" -gt 1000000 ] && MAX_SIZE=1000000
 
       if [ "$PERCHSIZE" -gt "$MAX_SIZE" ]; then
          echo "- persistent changes size ${PERCHSIZE}MB exceeds available space"
@@ -2010,9 +2098,9 @@ minios_boot() {
       # $1 = source path, $2 = destination path
       local SRC="$1" DST="$2"
       local RESULT=false
-      
+
       debug_log "should_copy" "Checking: $SRC -> $DST"
-      
+
       if [ "$SKIP_TIME_CHECK" = true ]; then
          # if time is reset — only copy when destination does not exist
          if [ ! -f "$DST" ]; then
@@ -2035,7 +2123,7 @@ minios_boot() {
             RESULT=false
          fi
       fi
-      
+
       [ "$RESULT" = true ]
    }
 
@@ -2199,4 +2287,181 @@ change_root() {
    mount -n -o remount,ro aufs .
    pivot_root . run/initramfs
    exec $CHROOT . $INIT <dev/console >dev/console 2>&1
+}
+
+# Prepare shutdown initramfs for dracut
+# Based on change_root but adapted for dracut environment
+#
+prepare_shutdown_dracut() {
+   local UNION="$1"
+
+   cd "$UNION"
+
+   # Make sure important directories exist in union
+   mkdir -p boot dev proc sys tmp media mnt run
+
+   # Make tmp world-writable
+   chmod 1777 tmp
+
+   # Create essential device files if they don't exist
+   if [ ! -e dev/console ]; then mknod dev/console c 5 1 2>/dev/null || true; fi
+   if [ ! -e dev/tty ]; then mknod dev/tty c 5 0 2>/dev/null || true; fi
+   if [ ! -e dev/tty0 ]; then mknod dev/tty0 c 4 0 2>/dev/null || true; fi
+   if [ ! -e dev/tty1 ]; then mknod dev/tty1 c 4 1 2>/dev/null || true; fi
+   if [ ! -e dev/null ]; then mknod dev/null c 1 3 2>/dev/null || true; fi
+
+   # Create fsck.aufs symlink if using aufs
+   if [ ! -e sbin/fsck.aufs ]; then ln -s /bin/true sbin/fsck.aufs 2>/dev/null || true; fi
+
+   # Mount tmpfs for /run and /tmp in the new root
+   mount -t tmpfs tmpfs run 2>/dev/null || true
+   mount -t tmpfs tmpfs tmp 2>/dev/null || true
+
+   # Preserve initramfs for shutdown (dracut requirement)
+   # Copy usr directory (without modules) and recreate symlinks
+   mkdir -p run/initramfs/usr
+
+   # Copy /etc (may contain necessary config for eject and other tools)
+   [ -d /etc ] && cp -a /etc run/initramfs/ 2>/dev/null || true
+
+   # Copy usr/bin and usr/sbin (busybox + tools)
+   [ -d /usr/bin ] && cp -a /usr/bin run/initramfs/usr/ 2>/dev/null || true
+   [ -d /usr/sbin ] && cp -a /usr/sbin run/initramfs/usr/ 2>/dev/null || true
+
+   # Copy usr/lib excluding modules directory
+   if [ -d /usr/lib ]; then
+      mkdir -p run/initramfs/usr/lib
+      for item in /usr/lib/*; do
+         [ "$(basename "$item")" = "modules" ] && continue
+         cp -a "$item" run/initramfs/usr/lib/ 2>/dev/null || true
+      done
+   fi
+
+   # Copy usr/lib64 if exists (excluding modules)
+   if [ -d /usr/lib64 ]; then
+      mkdir -p run/initramfs/usr/lib64
+      for item in /usr/lib64/*; do
+         [ "$(basename "$item")" = "modules" ] && continue
+         cp -a "$item" run/initramfs/usr/lib64/ 2>/dev/null || true
+      done
+   fi
+
+   # Recreate merged /usr symlinks (bin, sbin, lib, lib64)
+   cd "$UNION/run/initramfs"
+   ln -sf usr/bin bin 2>/dev/null || true
+   ln -sf usr/sbin sbin 2>/dev/null || true
+   ln -sf usr/lib lib 2>/dev/null || true
+   [ -d usr/lib64 ] && ln -sf usr/lib64 lib64 2>/dev/null || true
+   cd "$UNION"
+
+   # Copy shutdown script
+   if [ -f /shutdown ]; then
+      cp -a /shutdown run/initramfs/ 2>/dev/null || true
+      chmod +x run/initramfs/shutdown 2>/dev/null || true
+   fi
+
+   # Copy dracut libraries and hooks (needed for shutdown)
+   mkdir -p run/initramfs/var/lib run/initramfs/var/log
+   [ -f /usr/lib/dracut-lib.sh ] && cp -a /usr/lib/dracut-lib.sh run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -f /usr/lib/dracut-dev-lib.sh ] && cp -a /usr/lib/dracut-dev-lib.sh run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -d /usr/lib/dracut ] && cp -a /usr/lib/dracut run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -f /usr/bin/dracut-util ] && cp -a /usr/bin/dracut-util run/initramfs/usr/bin/ 2>/dev/null || true
+   [ -d /var/lib/dracut ] && cp -a /var/lib/dracut run/initramfs/var/lib/ 2>/dev/null || true
+
+   # Copy initramfs logs for debugging
+   [ -d /var/log ] && cp -a /var/log/* run/initramfs/var/log/ 2>/dev/null || true
+   [ -d /run/log ] && cp -a /run/log/* run/initramfs/var/log/ 2>/dev/null || true
+
+   # Preserve /memory by moving it into the new root's /run/initramfs
+   mkdir -p run/initramfs/memory
+   mount --move "$MEMORY" run/initramfs/memory 2>/dev/null || mount --bind "$MEMORY" run/initramfs/memory
+}
+
+# Prepare shutdown initramfs
+# Creates a self-contained /run/initramfs with everything needed for shutdown and recreation
+#
+prepare_initramfs_dracut() {
+   local UNION="$1"
+
+   cd "$UNION"
+
+   # Make sure important directories exist in union
+   mkdir -p boot dev proc sys tmp media mnt run
+
+   # Make tmp world-writable
+   chmod 1777 tmp
+
+   # Create essential device files if they don't exist
+   if [ ! -e dev/console ]; then mknod dev/console c 5 1 2>/dev/null || true; fi
+   if [ ! -e dev/tty ]; then mknod dev/tty c 5 0 2>/dev/null || true; fi
+   if [ ! -e dev/tty0 ]; then mknod dev/tty0 c 4 0 2>/dev/null || true; fi
+   if [ ! -e dev/tty1 ]; then mknod dev/tty1 c 4 1 2>/dev/null || true; fi
+   if [ ! -e dev/null ]; then mknod dev/null c 1 3 2>/dev/null || true; fi
+
+   # Create fsck.aufs symlink if using aufs
+   if [ ! -e sbin/fsck.aufs ]; then ln -s /bin/true sbin/fsck.aufs 2>/dev/null || true; fi
+
+   # Mount tmpfs for /run and /tmp in the new root
+   mount -t tmpfs tmpfs run 2>/dev/null || true
+   mount -t tmpfs tmpfs tmp 2>/dev/null || true
+
+   # Preserve initramfs for shutdown
+
+   mkdir -p run/initramfs/usr
+
+   # Copy /dracut-mos if exists
+   [ -d /dracut-mos ] && cp -a /dracut-mos run/initramfs/ 2>/dev/null || true
+
+   # Copy /etc
+   [ -d /etc ] && cp -a /etc run/initramfs/ 2>/dev/null || true
+
+   # Copy usr/bin and usr/sbin
+   [ -d /usr/bin ] && cp -a /usr/bin run/initramfs/usr/ 2>/dev/null || true
+   [ -d /usr/sbin ] && cp -a /usr/sbin run/initramfs/usr/ 2>/dev/null || true
+
+   # Copy usr/lib excluding modules directory
+   if [ -d /usr/lib ]; then
+      mkdir -p run/initramfs/usr/lib
+      for item in /usr/lib/*; do
+         [ "$(basename "$item")" = "modules" ] && continue
+         cp -a "$item" run/initramfs/usr/lib/ 2>/dev/null || true
+      done
+   fi
+
+   # Copy usr/lib64
+   if [ -d /usr/lib64 ]; then
+      mkdir -p run/initramfs/usr/lib64
+      cp -a /usr/lib64 run/initramfs/usr/ 2>/dev/null || true
+   fi
+
+   # Recreate merged /usr symlinks
+   cd "$UNION/run/initramfs"
+   ln -sf usr/bin bin 2>/dev/null || true
+   ln -sf usr/sbin sbin 2>/dev/null || true
+   ln -sf usr/lib lib 2>/dev/null || true
+   [ -d usr/lib64 ] && ln -sf usr/lib64 lib64 2>/dev/null || true
+   cd "$UNION"
+
+   # Copy shutdown script
+   cp -a /shutdown run/initramfs/ 2>/dev/null || true
+   chmod +x run/initramfs/shutdown 2>/dev/null || true
+   # Copy mkdracut script
+   cp -a /mkdracut run/initramfs/ 2>/dev/null || true
+   chmod +x run/initramfs/mkdracut 2>/dev/null || true
+
+   # Copy dracut libraries and hooks
+   mkdir -p run/initramfs/var/lib run/initramfs/var/log
+   [ -f /usr/lib/dracut-lib.sh ] && cp -a /usr/lib/dracut-lib.sh run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -f /usr/lib/dracut-dev-lib.sh ] && cp -a /usr/lib/dracut-dev-lib.sh run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -d /usr/lib/dracut ] && cp -a /usr/lib/dracut run/initramfs/usr/lib/ 2>/dev/null || true
+   [ -f /usr/bin/dracut-util ] && cp -a /usr/bin/dracut-util run/initramfs/usr/bin/ 2>/dev/null || true
+   [ -d /var/lib/dracut ] && cp -a /var/lib/dracut run/initramfs/var/lib/ 2>/dev/null || true
+
+   # Copy initramfs logs for debugging
+   [ -d /var/log ] && cp -a /var/log/* run/initramfs/var/log/ 2>/dev/null || true
+   [ -d /run/log ] && cp -a /run/log/* run/initramfs/var/log/ 2>/dev/null || true
+
+   # Preserve /memory by moving it into the new root's /run/initramfs
+   mkdir -p run/initramfs/memory
+   mount --move "$MEMORY" run/initramfs/memory 2>/dev/null || mount --bind "$MEMORY" run/initramfs/memory
 }
