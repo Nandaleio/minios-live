@@ -51,7 +51,7 @@ fi
 
 # set background color and big wait mouse cursor
 xsetroot -solid '#111111'
-xsetroot -xcf /usr/share/icons/breeze_cursors/cursors/watch 37
+xsetroot -xcf "/usr/share/icons/breeze_cursors/cursors/watch" 37
 
 # disable screen blanking
 xset s off
@@ -142,12 +142,7 @@ fi
 # start xfce4 panel in background
 xfce4-panel --disable-wm-check --sm-client-disable &
 
-(
-    while [ "$(wmctrl -l | grep xfce4-panel)" = "" ]; do
-        sleep 0.1
-    done
-    xprop -id $(wmctrl -l | grep xfce4-panel | cut -d " " -f 1) -format _NET_WM_STRUT 32c -set _NET_WM_STRUT "0,0,0,52"
-) &
+# The panel reserves its own space through EWMH struts.
 
 # start keyboard layout switcher if available
 case $(cat ~/.fluxbox/kblayout) in

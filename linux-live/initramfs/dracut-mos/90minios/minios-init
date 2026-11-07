@@ -9,6 +9,8 @@ LIVEKITNAME="minios"
 
 . /lib/livekitlib
 
+boot_console_mirror_start
+
 BEXT=$(cmdline_value bext)
 [ -z "$BEXT" ] && BEXT="sb"
 
@@ -48,14 +50,17 @@ init_blkid_cache
 # find data dir with filesystem bundles
 DATA="$(find_data 45 "$DATAMNT")"
 check_data_found "$DATA"
+find_perch_data "$DATA"
 debug_shell
 
 # copy to RAM if needed
-DATA="$(copy_to_ram "$DATA" "$CHANGES")"
+DATA="$(copy_to_ram "$DATA" "$CHANGES")" || fatal "Cannot copy system data to RAM"
 debug_shell
 
 # setup persistent changes, if possible
 persistent_changes "$DATA" "$CHANGES"
+CHANGES="${MINIOS_VENTOY_RAM_CHANGES:-$CHANGES}"
+[ -n "$(toram_mode)" ] || find_perch_data "$DATA"
 debug_shell
 
 # setup running kernel files
@@ -63,14 +68,18 @@ setup_running_kernel "$DATA"
 debug_shell
 
 # mount bundles
-mount_bundles "$DATA" "$BUNDLES"
+bind_perch_bundles "$DATA" || fatal "Cannot prepare external bundles"
+mount_bundles "$DATA" "$BUNDLES" || fatal "Cannot mount system bundles"
 debug_shell
 
 # init aufs union, or setup overlayfs union
-init_union "$CHANGES" "$UNION" "$BUNDLES"
+init_union "$CHANGES" "$UNION" "$BUNDLES" ||
+    fatal "Cannot construct the root union"
 
-# add data to aufs union
-union_append_bundles "$BUNDLES" "$UNION"
+# add data to aufs union and verify the writable layer
+complete_union "${MINIOS_VENTOY_RAM_CHANGES:-$CHANGES}" "$UNION" "$BUNDLES" ||
+    fatal "Cannot complete the root union"
+CHANGES="${MINIOS_VENTOY_RAM_CHANGES:-$CHANGES}"
 debug_shell
 
 # rootcopy
@@ -99,5 +108,6 @@ if [ "$TIMING_ENABLED" ] && [ -r /proc/uptime ]; then
 fi
 
 prepare_initramfs_dracut "$UNION"
+boot_console_mirror_stop "$UNION"
 
 # The union is ready - dracut will handle the final switch_root

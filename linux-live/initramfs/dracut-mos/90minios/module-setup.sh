@@ -11,6 +11,16 @@ depends() {
     return 0
 }
 
+install_bundled_crypt() {
+    local payload=$1 list="$1/../buildroot/crypt_payload_files.txt" path
+
+    [ -f "$list" ] || return 1
+    while IFS= read -r path; do
+        [ -e "$payload/$path" ] || [ -L "$payload/$path" ] || return 1
+    done <"$list"
+    tar -C "$payload" -cf - -T "$list" | tar -C "$initdir" -xf -
+}
+
 install() {
     # Install dracut hooks
     inst_hook cmdline 30 "$moddir/parse-minios.sh"
@@ -38,6 +48,7 @@ install() {
     inst_simple "$STATIC_BIN/mke2fs" "/bin/mke2fs"
     inst_simple "$STATIC_BIN/resize2fs" "/bin/resize2fs"
     inst_simple "$STATIC_BIN/e2fsck" "/bin/e2fsck"
+    inst_simple "$STATIC_BIN/unsquashfs" "/bin/unsquashfs"
     inst_simple "$STATIC_BIN/mc" "/bin/mc"
     inst_simple "$STATIC_BIN/blkid" "/bin/blkid"
     inst_simple "$STATIC_BIN/lsblk" "/bin/lsblk"
@@ -46,8 +57,22 @@ install() {
     inst_simple "$STATIC_BIN/ncurses-menu" "/bin/ncurses-menu"
     inst_simple "$STATIC_BIN/@mount.httpfs2" "/bin/@mount.httpfs2"
     inst_simple "$STATIC_BIN/@mount.ntfs-3g" "/bin/@mount.ntfs-3g"
-    inst_simple "$STATIC_BIN/@mount.dynfilefs" "/bin/@mount.dynfilefs"
+    inst_simple "$STATIC_BIN/dynfilefs" "/bin/dynfilefs"
+    ln -sf dynfilefs "${initdir}/bin/@mount.dynfilefs"
     inst_simple "$STATIC_BIN/minios-boot" "/bin/minios-boot"
+    printf '%s\n' 'perch-storage-v1' >"${initdir}/etc/minios-initramfs-storage"
+
+    if [ "$MINIOS_CRYPT" = "true" ]; then
+        if [ -n "${MINIOS_CRYPT_PAYLOAD_DIR:-}" ]; then
+            # mkdracut includes the verified bundled closure after dependency
+            # resolution; do not expose musl binaries to the host resolver.
+            [ -x "$MINIOS_CRYPT_PAYLOAD_DIR/usr/sbin/cryptsetup" ] || return 1
+        else
+            install_bundled_crypt "${STATIC_BIN%/bin}" ||
+                inst_multiple cryptsetup || return 1
+        fi
+        printf '%s\n' 'luks-layer-v1' >"${initdir}/etc/minios-initramfs-crypt"
+    fi
 
     # Install livekitlib
     inst_simple "$LIVEKITLIB" "/lib/livekitlib"
@@ -94,28 +119,85 @@ install() {
     return 0
 }
 
+normalize_dynblk_module() {
+    local source="" candidate target count=0
+    [ -d "${initdir}/lib/modules" ] || return 0
+    while IFS= read -r candidate; do
+        [ -f "$candidate" ] || continue
+        source="$candidate"
+        count=$((count + 1))
+    done < <(find "${initdir}/lib/modules" -type f \
+        \( -name 'dynblk.ko' -o -name 'dynblk.ko.gz' -o -name 'dynblk.ko.xz' -o -name 'dynblk.ko.zst' \))
+    [ "$count" -eq 0 ] && return 0
+    if [ "$count" -ne 1 ]; then
+        echo "E: Multiple DynBlk module files found in initramfs input" >&2
+        return 1
+    fi
+    target="${source%.gz}"
+    target="${target%.xz}"
+    target="${target%.zst}"
+    case "$source" in
+        *.ko) return 0 ;;
+        *.ko.gz) gzip -cd "$source" >"$target.tmp" ;;
+        *.ko.xz) xz -cd "$source" >"$target.tmp" ;;
+        *.ko.zst) zstd -cd "$source" >"$target.tmp" ;;
+        *) return 1 ;;
+    esac
+    mv "$target.tmp" "$target"
+    rm -f "$source"
+    chmod 0644 "$target"
+}
+
 # Explicit kernel module selection - matches livekit approach
 installkernel() {
+    local dynblk_bin=""
+
     # Filesystems
-    instmods squashfs overlay loop zram aufs
+    instmods squashfs overlay loop zram aufs aufs-ng
+    instmods -o dynblk
+    normalize_dynblk_module || return 1
+    if find "${initdir}/lib/modules" -type f -name 'dynblk.ko' -print -quit | grep -q .; then
+        if [ -x /run/initramfs/bin/dynblk ]; then
+            dynblk_bin=/run/initramfs/bin/dynblk
+        elif [ -x /linux-live/initramfs/livekit-mos/bin/dynblk ]; then
+            dynblk_bin=/linux-live/initramfs/livekit-mos/bin/dynblk
+        else
+            echo "E: dynblk.ko is present but the initramfs DynBlk binary is missing" >&2
+            return 1
+        fi
+        inst_simple "$dynblk_bin" "/bin/dynblk"
+        inst_dir /sbin
+        ln -sf /bin/dynblk "${initdir}/sbin/mount.dynblk"
+        touch "${initdir}/etc/minios-initramfs-dynblk"
+        if "$dynblk_bin" limits --format vmdk >/dev/null 2>&1; then
+            printf '%s\n' 'vmdk-session-v1' >"${initdir}/etc/minios-initramfs-dynblk"
+        fi
+    fi
     instmods ext2 ext3 ext4 fat vfat ntfs ntfs3 exfat
     instmods isofs fuse efivarfs btrfs xfs
     instmods nls_cp437 nls_iso8859-1 nls_utf8
 
     # Compression and checksums
     instmods =crypto/lz4 =crypto/zstd
-    instmods crc32c crc32c-intel crc32-pclmul crc32c_generic
+    instmods -o lz4hc lzo lzo-rle deflate
+    instmods -o crc32c-intel
+    instmods -o crc32-pclmul
+    instmods -o crc32c_generic
 
     # Block devices
     instmods nbd dm-mod
     instmods =drivers/block/zram =drivers/block/loop
     instmods =drivers/staging/zsmalloc
+    if [ "$MINIOS_CRYPT" = "true" ]; then
+        instmods dm-crypt =crypto || return 1
+    fi
 
     # USB support
     instmods =drivers/usb/storage =drivers/usb/host
     instmods =drivers/usb/common =drivers/usb/core
     instmods =drivers/hid/usbhid
     instmods hid hid-generic uhid
+    instmods -o hid-apple # Apple USB keyboards
 
     # Storage controllers
     instmods =drivers/cdrom

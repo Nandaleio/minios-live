@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: MiniOS\n"
+"Project-Id-Version: minios-live 6.0.0-1\n"
 "Report-Msgid-Bugs-To: support@minios.dev\n"
-"POT-Creation-Date: 2025-08-12 15:00+0000\n"
-"PO-Revision-Date: 2025-08-12 15:00+0000\n"
+"POT-Creation-Date: 2026-09-19 02:33+0300\n"
+"PO-Revision-Date: 2026-09-18 23:33+0000\n"
 "Last-Translator: crims0n <crims0n@minios.dev>\n"
 "Language-Team: Russian\n"
 "Language: ru_RU\n"
@@ -19,20 +19,20 @@ msgstr ""
 msgid "MiniOS"
 msgstr "MiniOS"
 
-msgid "Resume previous session"
-msgstr "Возобновить предыдущую сессию"
+msgid "Start MiniOS"
+msgstr "Запустить MiniOS"
 
 msgid "Start a new session"
 msgstr "Начать новую сессию"
 
-msgid "Choose session during startup"
-msgstr "Выбрать сессию при запуске"
+msgid "Choose a saved session"
+msgstr "Выбрать сохранённую сессию"
 
-msgid "Fresh start"
-msgstr "Чистый старт"
+msgid "Start without saving"
+msgstr "Запустить без сохранения"
 
-msgid "Copy to RAM"
-msgstr "Скопировать в RAM"
+msgid "Run from RAM"
+msgstr "Запустить из RAM"
 
 msgid "Loading kernel and ramdisk..."
 msgstr "Загрузка ядра и ramdisk..."
@@ -41,13 +41,79 @@ msgid "Back to language selection"
 msgstr "Назад к выбору языка"
 
 msgid "Press Esc for options, automatic boot in # second{,s} ..."
-msgstr "Нажмите Esc для параметров, автозагрузка через # секунд{у,ы} ..."
+msgstr "Нажмите Esc для параметров, автозагрузка через # с ..."
 
 msgid "[F1] help"
 msgstr "[F1] помощь"
 
 msgid "[Tab] cmdline >"
-msgstr "[Tab] команды >"
+msgstr "[Tab] командная строка >"
 
 msgid "Choose Language"
-msgstr "Выберите язык"
+msgstr "Выбрать язык"
+
+msgid "Help"
+msgstr "Справка"
+
+msgid "[Enter] Select  [F1] Help  [F2] Language  [E] Edit  [C] Console"
+msgstr "[Enter] Выбрать  [F1] Справка  [F2] Язык  [E] Редактировать  [C] Консоль"
+
+msgid "[Enter] Apply language  [Esc] Back without changes"
+msgstr "[Enter] Применить язык  [Esc] Назад без изменений"
+
+msgid "MiniOS boot modes"
+msgstr "Режимы загрузки MiniOS"
+
+msgid "Resume the last saved session, if available. Recommended for normal use."
+msgstr "Возобновить последнюю сохранённую сессию, если доступна. Рекомендуется для обычного использования."
+
+msgid "Set up a new saved session. Existing sessions are kept."
+msgstr "Настроить новую сохранённую сессию. Существующие сессии сохраняются."
+
+msgid "Choose which saved session to restore during startup."
+msgstr "Выберите, какую сохранённую сессию восстановить при запуске."
+
+msgid "Start clean, without restoring a session or saving changes."
+msgstr "Запустить без восстановления сессии и без сохранения изменений."
+
+msgid "Copy the system to RAM before starting. Needs extra RAM and startup time."
+msgstr "Скопировать систему в RAM перед запуском. Требуется больше RAM и времени на загрузку."
+
+msgid "A saved session keeps your settings and files between restarts."
+msgstr "Сохранённая сессия сохраняет ваши настройки и файлы между перезагрузками."
+
+msgid "Saving requires writable storage."
+msgstr "Для сохранения требуется носитель с возможностью записи."
+
+msgid "[F2] changes the menu and system language, keyboard and time zone defaults."
+msgstr "[F2] изменяет язык меню и системы, а также настройки клавиатуры и часового пояса по умолчанию."
+
+msgid "[E] edits boot parameters; [C] opens the GRUB command line."
+msgstr "[E] редактирует параметры загрузки; [C] открывает командную строку GRUB."
+
+msgid "Press [Esc] to return to the boot menu."
+msgstr "Нажмите [Esc], чтобы вернуться в меню загрузки."
+
+msgid "Starting MiniOS in # second{,s} ..."
+msgstr "Запуск MiniOS через # сек..."
+
+msgid "[Enter] Start  [F1] Help  [F2] Language  [Tab] Edit options"
+msgstr "[Enter] Запустить  [F1] Справка  [F2] Язык  [Tab] Параметры загрузки"
+
+msgid "[Tab] edits boot parameters for the selected mode."
+msgstr "[Tab] редактирует параметры загрузки для выбранного режима."
+
+msgid "Press any key to return to the menu."
+msgstr "Нажмите любую клавишу, чтобы вернуться в меню."
+
+#~ msgid "F2 changes the menu and system language, keyboard and time zone defaults."
+#~ msgstr "F2 изменяет язык меню и системы, а также настройки клавиатуры и часового пояса по умолчанию."
+
+#~ msgid "E edits boot parameters; C opens the GRUB command line."
+#~ msgstr "E редактирует параметры загрузки; C открывает командную строку GRUB."
+
+#~ msgid "Press Esc to return to the boot menu."
+#~ msgstr "Нажмите Esc, чтобы вернуться в загрузочное меню."
+
+#~ msgid "Tab edits boot parameters for the selected mode."
+#~ msgstr "Tab позволяет изменить параметры загрузки для выбранного режима."

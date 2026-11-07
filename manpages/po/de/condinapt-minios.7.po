@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: minios-live 5.1.0\n"
-"POT-Creation-Date: 2025-10-02 16:39+0300\n"
-"PO-Revision-Date: 2025-10-02 16:39+0300\n"
+"POT-Creation-Date: 2026-09-06 18:17+0300\n"
+"PO-Revision-Date: 2026-09-06 15:29+0000\n"
 "Last-Translator: crims0n <crims0n@minios.dev>\n"
 "Language-Team: none\n"
 "Language: de\n"
@@ -17,766 +17,697 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #. type: TH
-#: minios-live.1:17 minios-cmd.1:17 condinapt.1:17 condinapt-minios.7:17
+#: minios-live.1:3 minios-cmd.1:3 condinapt.1:3 condinapt-minios.7:3
 #, no-wrap
-msgid "October 2025"
-msgstr ""
+msgid "September 2026"
+msgstr "September 2026"
 
 #. type: SH
-#: minios-live.1:19 minios-cmd.1:19 condinapt.1:19 condinapt-minios.7:19
+#: minios-live.1:4 minios-cmd.1:4 condinapt.1:4 condinapt-minios.7:4
 #, no-wrap
 msgid "NAME"
-msgstr ""
+msgstr "NAME"
 
 #. type: SH
-#: minios-live.1:27 minios-cmd.1:26 condinapt.1:26 condinapt-minios.7:22
+#: minios-live.1:9 minios-cmd.1:8 condinapt.1:10 condinapt-minios.7:6
 #, no-wrap
 msgid "DESCRIPTION"
-msgstr ""
-
-#. type: IP
-#: minios-live.1:39 minios-live.1:42 minios-live.1:44 minios-live.1:47
-#: minios-live.1:50 minios-live.1:53 minios-live.1:56 minios-live.1:58
-#: minios-live.1:60 minios-live.1:63 minios-live.1:118 minios-live.1:120
-#: minios-live.1:123 minios-live.1:125 minios-live.1:127 minios-cmd.1:37
-#: minios-cmd.1:41 minios-cmd.1:44 minios-cmd.1:47 minios-cmd.1:50
-#: minios-cmd.1:53 minios-cmd.1:56 minios-cmd.1:59 minios-cmd.1:61
-#: minios-cmd.1:64 minios-cmd.1:67 minios-cmd.1:70 condinapt.1:50
-#: condinapt.1:53 condinapt.1:56 condinapt.1:59 condinapt.1:62 condinapt.1:65
-#: condinapt.1:166 condinapt.1:170 condinapt.1:188 condinapt.1:191
-#: condinapt-minios.7:133 condinapt-minios.7:135
-#, no-wrap
-msgid "\\f[R]\\[bu]\\fR"
-msgstr ""
-
-#. type: IP
-#: minios-live.1:66 minios-live.1:69 minios-live.1:116 condinapt.1:34
-#: condinapt.1:36 condinapt.1:38 condinapt.1:40 condinapt.1:42 condinapt.1:44
-#: condinapt.1:47 condinapt.1:185 condinapt-minios.7:131
-#, no-wrap
-msgid "\\[bu]"
-msgstr ""
+msgstr "BESCHREIBUNG"
 
 #. type: SH
-#: minios-live.1:129 minios-cmd.1:154 condinapt.1:330 condinapt-minios.7:138
-#, no-wrap
-msgid "EXAMPLES"
-msgstr ""
-
-#. type: SH
-#: minios-live.1:185 minios-cmd.1:247 condinapt.1:492 condinapt-minios.7:310
-#, no-wrap
-msgid "SEE ALSO"
-msgstr ""
-
-#. type: SH
-#: minios-live.1:189 minios-live.1:192 minios-cmd.1:251 minios-cmd.1:254
-#: condinapt.1:496 condinapt.1:499 condinapt-minios.7:314
-#: condinapt-minios.7:317
-#, no-wrap
-msgid "AUTHORS"
-msgstr ""
-
-#. type: Plain text
-#: minios-live.1:192 minios-cmd.1:254 condinapt.1:499 condinapt-minios.7:317
-msgid "MiniOS Development Team E<lt>https://minios.devE<gt>"
-msgstr ""
-
-#. type: Plain text
-#: minios-live.1:193 minios-cmd.1:255 condinapt.1:500 condinapt-minios.7:318
-msgid "MiniOS Development Team."
-msgstr ""
-
-#. type: Plain text
-#: condinapt.1:378 condinapt.1:400 condinapt-minios.7:142
-#: condinapt-minios.7:165 condinapt-minios.7:186 condinapt-minios.7:213
-msgid "\\f[B]packages.list:\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt.1:384 condinapt-minios.7:148
-#, no-wrap
-msgid ""
-"\\f[C]\n"
-"# Basic multimedia codecs - always\n"
-"gstreamer1.0-plugins-base\n"
-"gstreamer1.0-plugins-good\\fR\n"
-msgstr ""
-
-#. type: SH
-#: condinapt.1:485 condinapt-minios.7:297
+#: minios-live.1:132 condinapt.1:266 condinapt-minios.7:211
 #, no-wrap
 msgid "FILES"
-msgstr ""
+msgstr "DATEIEN"
 
-#. type: TH
-#: condinapt-minios.7:17
+#. type: TP
+#: minios-live.1:133 condinapt-minios.7:218
 #, no-wrap
-msgid "CONDINAPT-MINIOS"
-msgstr ""
+msgid "\\f[B]linux-live/build.conf\\fR"
+msgstr "B<linux-live/build.conf>"
 
-#. type: TH
-#: condinapt-minios.7:17
+#. type: TP
+#: minios-live.1:136 condinapt-minios.7:231
 #, no-wrap
-msgid "MiniOS CondinAPT Integration"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:22
-msgid "condinapt-minios - CondinAPT integration in the MiniOS build system"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:26
-msgid ""
-"This document describes the specific aspects of using \\f[B]condinapt\\f[R]"
-"(1) in the MiniOS build system.\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:28
-msgid "For basic CondinAPT features, see \\f[B]condinapt\\f[R](1).\\fR"
-msgstr ""
+msgid "\\f[B]/etc/minios-live/build.conf\\fR"
+msgstr "\\f[B]/etc/minios-live/build.conf\\fR"
 
 #. type: SH
-#: condinapt-minios.7:28
+#: minios-live.1:142 minios-cmd.1:192 condinapt.1:285 condinapt-minios.7:234
 #, no-wrap
-msgid "INTEGRATION WITH MINIOS BUILD SYSTEM"
-msgstr ""
+msgid "SEE ALSO"
+msgstr "SIEHE AUCH"
 
-#. type: SS
-#: condinapt-minios.7:29
+#. type: SH
+#: minios-live.1:145 minios-live.1:149 minios-cmd.1:195 minios-cmd.1:199
+#: condinapt.1:288 condinapt.1:292 condinapt-minios.7:237
+#: condinapt-minios.7:241
 #, no-wrap
-msgid "Usage in MiniOS Modules"
+msgid "AUTHORS"
+msgstr "AUTOREN"
+
+#. type: Plain text
+#: minios-live.1:149 minios-cmd.1:199 condinapt.1:292 condinapt-minios.7:241
+msgid "MiniOS Development Team E<.UR https://minios.dev> E<.UE>"
+msgstr "MiniOS Entwicklungsteam E<.UR https://minios.dev> E<.UE>"
+
+#. type: Plain text
+#: minios-live.1:150 minios-cmd.1:200 condinapt.1:293 condinapt-minios.7:242
+msgid "MiniOS Development Team."
+msgstr "MiniOS Development Team."
+
+#. type: Plain text
+#: condinapt.1:199 condinapt-minios.7:201
+#, no-wrap
+msgid "exfatprogs || exfat-utils && exfat-fuse\n"
+msgstr "exfatprogs || exfat-utils && exfat-fuse\n"
+
+#. type: TH
+#: condinapt-minios.7:3
+#, no-wrap
+msgid "CONDINAPT-MINIOS"
+msgstr "CONDINAPT-MINIOS"
+
+#. type: TH
+#: condinapt-minios.7:3
+#, no-wrap
+msgid "MiniOS CondinAPT Integration"
+msgstr "MiniOS CondinAPT-Integration"
+
+#. type: Plain text
+#: condinapt-minios.7:6
+msgid "condinapt-minios - use CondinAPT in MiniOS build modules"
+msgstr "condinapt-minios – verwenden Sie CondinAPT in MiniOS-Buildmodulen"
+
+#. type: Plain text
+#: condinapt-minios.7:11
+msgid ""
+"MiniOS modules use \\f[B]condinapt\\f[R](1) to select and install APT "
+"packages from the active build configuration.  This page documents the "
+"MiniOS staging paths, module layout, and standard filter map.\\fR"
 msgstr ""
+"MiniOS-Module verwenden B<condinapt>(1), um APT-Pakete aus der aktiven Build-"
+"Konfiguration auszuwählen und zu installieren. Diese Seite dokumentiert die "
+"MiniOS-Staging-Pfade, die Modulstruktur und die Standard-Filtermap."
+
+#. type: SH
+#: condinapt-minios.7:11
+#, no-wrap
+msgid "MODULE INTEGRATION"
+msgstr "MODULINTEGRATION"
+
+#. type: Plain text
+#: condinapt-minios.7:14
+msgid ""
+"The builder discovers modules through the selected environment directory:"
+msgstr "Der Builder erkennt Module über das gewählte Umgebungsverzeichnis:"
+
+#. type: Plain text
+#: condinapt-minios.7:17
+#, no-wrap
+msgid "linux-live/environments/E<lt>desktopE<gt>/\n"
+msgstr "linux-live/environments/E<lt>desktopE<gt>/\n"
+
+#. type: Plain text
+#: condinapt-minios.7:20
+msgid "Entries there are normally links to reusable module sources under:"
+msgstr ""
+"Einträge dort sind normalerweise Links zu wiederverwendbaren Modulquellen "
+"unter:"
+
+#. type: Plain text
+#: condinapt-minios.7:23
+#, no-wrap
+msgid "linux-live/scripts/E<lt>NN-module-nameE<gt>/\n"
+msgstr "linux-live/scripts/E<lt>NN-module-nameE<gt>/\n"
+
+#. type: Plain text
+#: condinapt-minios.7:32
+msgid ""
+"During the install stage, the builder copies the module\\[cq]s "
+"\\f[B]install\\f[R] script to \\f[B]/install\\f[R] in the chroot.  It also "
+"stages \\f[B]condinapt\\f[R], \\f[B]condinapt.map\\f[R], "
+"\\f[B]packages.list\\f[R], and the generated build configuration at the "
+"chroot root.  Do not rely on \\f[B]$CWD\\f[R] or an installed \\f[B]/usr/"
+"share/minios-live\\f[R] path from inside a module script.\\fR"
+msgstr ""
+"Während der Installationsphase kopiert der Builder das B<install>-Skript des "
+"Moduls nach B</install> im Chroot. Zusätzlich werden B<condinapt>, "
+"B<condinapt.map>, B<packages.list> und die generierte Build-Konfiguration im "
+"Chroot-Stamm bereitgestellt. Verlassen Sie sich in einem Modulsript nicht "
+"auf B<$CWD> oder einen installierten Pfad B</usr/share/minios-live>."
 
 #. type: Plain text
 #: condinapt-minios.7:34
-msgid ""
-"CondinAPT is a standard tool for package installation in MiniOS modules.  It "
-"integrates into the build process through the standard module interface."
-msgstr ""
+msgid "A minimal \\f[B]install\\f[R] script is:\\fR"
+msgstr "Ein minimales B<install>-Skript ist:"
 
 #. type: Plain text
-#: condinapt-minios.7:36
-msgid "In the module installation script (\\f[B]install\\f[R]):\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:41 condinapt-minios.7:280
+#: condinapt-minios.7:40
 #, no-wrap
 msgid ""
-"\\f[C]\n"
 "#!/bin/bash\n"
-"set -e\\fR\n"
+"set -e\n"
+"set -o pipefail\n"
+"set -u\n"
 msgstr ""
+"#!/bin/bash\n"
+"set -e\n"
+"set -o pipefail\n"
+"set -u\n"
 
 #. type: Plain text
-#: condinapt-minios.7:44 condinapt-minios.7:283
+#: condinapt-minios.7:43
 #, no-wrap
 msgid ""
-"\\f[C]# Load MiniOS library\n"
-"\\&. /minioslib || exit 1\\fR\n"
+"\\&. /minioslib || exit 1\n"
+"\\&. /minios_build.conf || exit 1\n"
 msgstr ""
+"&. /minioslib || exit 1\n"
+"&. /minios_build.conf || exit 1\n"
 
 #. type: Plain text
-#: condinapt-minios.7:51
+#: condinapt-minios.7:49
 #, no-wrap
 msgid ""
-"\\f[C]# Install packages via CondinAPT\n"
-"/usr/share/minios-live/condinapt \\[rs]\n"
-"    -l \\[dq]$CWD/packages.list\\[dq] \\[rs]\n"
-"    -c /etc/minios-live/build.conf \\[rs]\n"
-"    -m /usr/share/minios-live/condinapt.map\\fR\n"
-"\n"
+"SCRIPT_DIR=\\[dq]$(dirname \\[dq]$(readlink -f \\[dq]$0\\[dq])\\[dq])\\[dq]\n"
+"/condinapt \\[rs]\n"
+"    -l \\[dq]${SCRIPT_DIR}/packages.list\\[dq] \\[rs]\n"
+"    -c \\[dq]${SCRIPT_DIR}/minios_build.conf\\[dq] \\[rs]\n"
+"    -m \\[dq]${SCRIPT_DIR}/condinapt.map\\[dq]\n"
 msgstr ""
+"SCRIPT_DIR=\\[dq]$(dirname \\[dq]$(readlink -f \\[dq]$0\\[dq])\\[dq])\\[dq]\n"
+"/condinapt \\ \n"
+"    -l \\[dq]${SCRIPT_DIR}/packages.list\\[dq] \\ \n"
+"    -c \\[dq]${SCRIPT_DIR}/minios_build.conf\\[dq] \\ \n"
+"    -m \\[dq]${SCRIPT_DIR}/condinapt.map\\[dq]\n"
 
-#. type: SS
+#. type: Plain text
 #: condinapt-minios.7:52
-#, no-wrap
-msgid "MiniOS Module Structure"
-msgstr ""
+msgid "The standard module may contain:"
+msgstr "Das Standardmodul kann enthalten:"
 
 #. type: Plain text
-#: condinapt-minios.7:56
-msgid ""
-"Each module in \\f[B]/usr/share/minios-live/scripts/\\f[R] follows a "
-"standardized structure:\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:65
+#: condinapt-minios.7:64
 #, no-wrap
 msgid ""
-"\\f[C]\n"
-"XX-module-name/\n"
-"\\[u251C]\\[u2500]\\[u2500] packages.list                     # Package list with conditions\n"
-"\\[u251C]\\[u2500]\\[u2500] install                           # Installation script (uses CondinAPT)\n"
-"\\[u251C]\\[u2500]\\[u2500] rootcopy-install/                 # (optional) Files to copy\n"
-"\\[u2514]\\[u2500]\\[u2500] rootcopy-postinstall/             # (optional) Files after installation\\fR\n"
-"\n"
+"NN-module-name/\n"
+"|-- packages.list\n"
+"|-- install\n"
+"|-- skip_conditions.conf       # optional\n"
+"|-- rootcopy-install/          # optional\n"
+"|-- build                      # optional\n"
+"|-- patches/                   # optional, used by build\n"
+"|-- is_dkms_build              # optional DKMS marker\n"
+"|-- rootcopy-postinstall/      # optional\n"
+"\\[ga]-- postinstall                # optional\n"
 msgstr ""
+"NN-module-name/\n"
+"|-- packages.list\n"
+"|-- install\n"
+"|-- skip_conditions.conf       # optional\n"
+"|-- rootcopy-install/          # optional\n"
+"|-- build                      # optional\n"
+"|-- patches/                   # optional, wird von build verwendet\n"
+"|-- is_dkms_build              # optionaler DKMS-Marker\n"
+"|-- rootcopy-postinstall/      # optional\n"
+"|-- postinstall                # optional\n"
+
+#. type: Plain text
+#: condinapt-minios.7:69
+msgid ""
+"See \\f[B]linux-live/scripts/10-example/README.md\\f[R] for the complete "
+"module lifecycle, ownership manifests, naming, and environment-link "
+"instructions.\\fR"
+msgstr ""
+"Siehe B<linux-live/scripts/10-example/README.md> für den vollständigen Modul-"
+"Lebenszyklus, Besitznachweise, Namensgebung und Anweisungen zur Verknüpfung "
+"von Umgebungen."
 
 #. type: SH
-#: condinapt-minios.7:66
+#: condinapt-minios.7:69
 #, no-wrap
-msgid "MINIOS CONFIGURATION"
-msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:67
-#, no-wrap
-msgid "Filter Mapping"
-msgstr ""
+msgid "MINIOS FILTER MAP"
+msgstr "MINIOS-FILTERMAP"
 
 #. type: Plain text
-#: condinapt-minios.7:70
-msgid "Contents of \\f[B]condinapt.map\\f[R] in MiniOS:\\fR"
-msgstr ""
+#: condinapt-minios.7:71
+msgid "The current \\f[B]linux-live/condinapt.map\\f[R] contains:\\fR"
+msgstr "Die aktuelle B<linux-live/condinapt.map> enthält:"
 
 #. type: Plain text
-#: condinapt-minios.7:86
+#: condinapt-minios.7:89
 #, no-wrap
 msgid ""
-"\\f[C]\n"
 "d=DISTRIBUTION\n"
 "da=DISTRIBUTION_ARCH\n"
-"dt=DISTRIBUTION_TYPE\n"
+"dp=DISTRIBUTION_PROFILE\n"
+"is=INIT_SYSTEM\n"
 "de=DESKTOP_ENVIRONMENT\n"
 "pv=PACKAGE_VARIANT\n"
 "ik=INSTALL_KERNEL\n"
 "kf=KERNEL_FLAVOUR\n"
-"ka=KERNEL_AUFS\n"
+"kp=KERNEL_PROVIDER\n"
+"ks=KERNEL_SERIES\n"
+"kc=KERNEL_CAPABILITIES\n"
 "kbd=KERNEL_BUILD_DKMS\n"
+"ib=INITRAMFS_BUILDER\n"
 "lo=LOCALE\n"
 "ml=MULTILINGUAL\n"
-"kl=KEEP_LOCALES\\fR\n"
-"\n"
+"kl=KEEP_LOCALES\n"
 msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:87
-#, no-wrap
-msgid "Configuration Variables"
-msgstr ""
+"d=DISTRIBUTION\n"
+"da=DISTRIBUTION_ARCH\n"
+"dp=DISTRIBUTION_PROFILE\n"
+"is=INIT_SYSTEM\n"
+"de=DESKTOP_ENVIRONMENT\n"
+"pv=PACKAGE_VARIANT\n"
+"ik=INSTALL_KERNEL\n"
+"kf=KERNEL_FLAVOUR\n"
+"kp=KERNEL_PROVIDER\n"
+"ks=KERNEL_SERIES\n"
+"kc=KERNEL_CAPABILITIES\n"
+"kbd=KERNEL_BUILD_DKMS\n"
+"ib=INITRAMFS_BUILDER\n"
+"lo=LOCALE\n"
+"ml=MULTILINGUAL\n"
+"kl=KEEP_LOCALES\n"
 
 #. type: Plain text
-#: condinapt-minios.7:90
-msgid "Main variables from \\f[B]build.conf\\f[R]:\\fR"
+#: condinapt-minios.7:97
+msgid ""
+"Scalar filters use exact string equality.  Inside the \\f[B]01-kernel\\f[R] "
+"build flow, \\f[B]KERNEL_CAPABILITIES\\f[R] is an indexed Bash array, so "
+"\\f[B]kc\\f[R] matches any detected capability.  The \\f[B]ks\\f[R] and "
+"\\f[B]kc\\f[R] values are not available to ordinary later modules.\\fR"
 msgstr ""
+"Skalare Filter verwenden exakte Zeichenkettenübereinstimmung. Im B<01-"
+"kernel>-Build-Prozess ist B<KERNEL_CAPABILITIES> ein indiziertes Bash-Array, "
+"daher passt B<kc> auf jede erkannte Fähigkeit. Die Werte von B<ks> und B<kc> "
+"stehen nachfolgenden Modulen nicht zur Verfügung."
+
+#. type: SH
+#: condinapt-minios.7:97
+#, no-wrap
+msgid "CONFIGURATION VALUES"
+msgstr "KONFIGURATIONSWERTE"
+
+#. type: Plain text
+#: condinapt-minios.7:99
+msgid "The default \\f[B]build.conf\\f[R] currently lists:\\fR"
+msgstr "Die Standard-B<build.conf> listet derzeit auf:"
 
 #. type: TP
-#: condinapt-minios.7:90
+#: condinapt-minios.7:99
 #, no-wrap
 msgid "\\f[B]DISTRIBUTION\\fR"
-msgstr ""
+msgstr "\\f[B]DISTRIBUTION\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:93
-msgid "Target distribution (bookworm, trixie, jammy, noble)"
+#: condinapt-minios.7:106
+msgid ""
+"Debian \\f[B]buster\\f[R], \\f[B]bullseye\\f[R], \\f[B]bookworm\\f[R], "
+"\\f[B]trixie\\f[R]; Ubuntu \\f[B]bionic\\f[R], \\f[B]focal\\f[R], "
+"\\f[B]jammy\\f[R], \\f[B]noble\\f[R], \\f[B]resolute\\f[R]; or Devuan "
+"\\f[B]beowulf\\f[R], \\f[B]chimaera\\f[R], \\f[B]daedalus\\f[R], "
+"\\f[B]excalibur\\f[R].\\fR"
 msgstr ""
+"Debian B<buster>, B<bullseye>, B<bookworm>, B<trixie>; Ubuntu B<bionic>, "
+"B<focal>, B<jammy>, B<noble>, B<resolute>; oder Devuan B<beowulf>, "
+"B<chimaera>, B<daedalus>, B<excalibur>."
 
 #. type: TP
-#: condinapt-minios.7:93
+#: condinapt-minios.7:106
 #, no-wrap
 msgid "\\f[B]DISTRIBUTION_ARCH\\fR"
-msgstr ""
+msgstr "\\f[B]DISTRIBUTION_ARCH\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:96
-msgid "Architecture (amd64, i386, i386-pae)"
-msgstr ""
+#: condinapt-minios.7:109
+msgid "\\f[B]amd64\\f[R], \\f[B]i386\\f[R], or \\f[B]i386-pae\\f[R].\\fR"
+msgstr "B<amd64>, B<i386> oder B<i386-pae>."
 
 #. type: TP
-#: condinapt-minios.7:96
+#: condinapt-minios.7:109
 #, no-wrap
 msgid "\\f[B]DESKTOP_ENVIRONMENT\\fR"
-msgstr ""
+msgstr "\\f[B]DESKTOP_ENVIRONMENT\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:99
-msgid "Desktop environment (core, flux, xfce, lxqt)"
-msgstr ""
+#: condinapt-minios.7:112
+msgid ""
+"\\f[B]core\\f[R], \\f[B]flux\\f[R], \\f[B]xfce\\f[R], or \\f[B]lxqt\\f[R]."
+"\\fR"
+msgstr "B<core>, B<flux>, B<xfce> oder B<lxqt>."
 
 #. type: TP
-#: condinapt-minios.7:99
+#: condinapt-minios.7:112
 #, no-wrap
 msgid "\\f[B]PACKAGE_VARIANT\\fR"
-msgstr ""
+msgstr "\\f[B]PACKAGE_VARIANT\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:102
-msgid "Package variant (minimum, standard, toolbox, ultra)"
+#: condinapt-minios.7:117
+msgid ""
+"\\f[B]minimum\\f[R], \\f[B]standard\\f[R], \\f[B]toolbox\\f[R], or "
+"\\f[B]ultra\\f[R].  The builder normalizes Flux to \\f[B]minimum\\f[R].\\fR"
 msgstr ""
+"B<minimum>, B<standard>, B<toolbox> oder B<ultra>. Der Builder normalisiert "
+"Flux auf B<minimum>."
 
 #. type: TP
-#: condinapt-minios.7:102
+#: condinapt-minios.7:117
 #, no-wrap
 msgid "\\f[B]INSTALL_KERNEL\\fR"
-msgstr ""
+msgstr "\\f[B]INSTALL_KERNEL\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:105
-msgid "Install kernel package (true/false)"
-msgstr ""
+#: condinapt-minios.7:120
+msgid "Whether to install a kernel."
+msgstr "Ob ein Kernel installiert werden soll."
 
 #. type: TP
-#: condinapt-minios.7:105
+#: condinapt-minios.7:120
+#, no-wrap
+msgid "\\f[B]KERNEL_PROVIDER\\fR"
+msgstr "\\f[B]KERNEL_PROVIDER\\fR"
+
+#. type: Plain text
+#: condinapt-minios.7:123
+msgid "\\f[B]distribution\\f[R] or \\f[B]minios\\f[R].\\fR"
+msgstr "B<distribution> oder B<minios>."
+
+#. type: TP
+#: condinapt-minios.7:123
+#, no-wrap
+msgid "\\f[B]MINIOS_KERNEL_SERIES\\fR"
+msgstr "\\f[B]MINIOS_KERNEL_SERIES\\fR"
+
+#. type: Plain text
+#: condinapt-minios.7:127
+msgid ""
+"User selection for the MiniOS provider: \\f[B]auto\\f[R], \\f[B]6.1\\f[R], "
+"or \\f[B]6.12\\f[R].\\fR"
+msgstr "Benutzerauswahl für den MiniOS-Provider: B<auto>, B<6.1> oder B<6.12>."
+
+#. type: TP
+#: condinapt-minios.7:127
 #, no-wrap
 msgid "\\f[B]KERNEL_FLAVOUR\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:108
-msgid "Kernel flavour (none, rt, cloud)"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:108
-#, no-wrap
-msgid "\\f[B]KERNEL_AUFS\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:111
-msgid "AUFS support (true/false)"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:111
-#, no-wrap
-msgid "\\f[B]KERNEL_BUILD_DKMS\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:114
-msgid "Build DKMS modules (true/false)"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:114
-#, no-wrap
-msgid "\\f[B]LOCALE\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:117
-msgid "System locale (C, en_US, ru_RU, es_ES, pt_BR)"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:117
-#, no-wrap
-msgid "\\f[B]MULTILINGUAL\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:120
-msgid "Multilingual support (true/false)"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:120
-#, no-wrap
-msgid "\\f[B]KEEP_LOCALES\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:123
-msgid "Keep locales (true/false)"
-msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:123
-#, no-wrap
-msgid "Automatically Calculated Variables"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:126
-msgid "From \\f[B]minioslib\\f[R]:\\fR"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:126
-#, no-wrap
-msgid "\\f[B]DISTRIBUTION_TYPE\\fR"
-msgstr ""
+msgstr "\\f[B]KERNEL_FLAVOUR\\fR"
 
 #. type: Plain text
 #: condinapt-minios.7:130
-msgid ""
-"Distribution type (debian, ubuntu) - automatically determined based on "
-"DISTRIBUTION"
-msgstr ""
+msgid "\\f[B]none\\f[R], \\f[B]rt\\f[R], or \\f[B]cloud\\f[R].\\fR"
+msgstr "B<none>, B<rt> oder B<cloud>."
+
+#. type: TP
+#: condinapt-minios.7:130
+#, no-wrap
+msgid "\\f[B]KERNEL_BUILD_DKMS\\fR"
+msgstr "\\f[B]KERNEL_BUILD_DKMS\\fR"
 
 #. type: Plain text
 #: condinapt-minios.7:133
-msgid "\\f[B]legacy\\f[R]: stretch, buster, orel, bionic\\fR"
-msgstr ""
+msgid "Whether to build additional DKMS drivers."
+msgstr "Ob zusätzliche DKMS-Treiber gebaut werden sollen."
+
+#. type: TP
+#: condinapt-minios.7:133
+#, no-wrap
+msgid "\\f[B]INITRAMFS_BUILDER\\fR"
+msgstr "\\f[B]INITRAMFS_BUILDER\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:135
-msgid "\\f[B]current\\f[R]: bullseye, bookworm, focal, jammy, noble\\fR"
-msgstr ""
+#: condinapt-minios.7:136
+msgid "\\f[B]livekit\\f[R] or \\f[B]dracut\\f[R].\\fR"
+msgstr "B<livekit> oder B<dracut>."
+
+#. type: TP
+#: condinapt-minios.7:136
+#, no-wrap
+msgid "\\f[B]LOCALE\\f[R], \\f[B]MULTILINGUAL\\f[R], \\f[B]KEEP_LOCALES\\fR"
+msgstr "B<LOCALE>, B<MULTILINGUAL>, B<KEEP_LOCALES>"
 
 #. type: Plain text
-#: condinapt-minios.7:137
-msgid "\\f[B]future\\f[R]: trixie, kali-rolling, sid\\fR"
-msgstr ""
-
-#. type: SS
 #: condinapt-minios.7:139
-#, no-wrap
-msgid "Multimedia Module"
-msgstr ""
+msgid "Locale selection and locale-retention settings."
+msgstr "Sprachauswahl und Einstellungen zur Beibehaltung von Locales."
 
 #. type: Plain text
-#: condinapt-minios.7:153
-#, no-wrap
+#: condinapt-minios.7:148
 msgid ""
-"\\f[C]# Additional codecs - not for minimal variant\n"
-"gstreamer1.0-plugins-bad -pv=minimum\n"
-"gstreamer1.0-plugins-ugly -pv=minimum\n"
-"gstreamer1.0-libav -pv=minimum\\fR\n"
+"CondinAPT can use an unmapped full variable name only when that variable is "
+"present in the configuration supplied with \\f[B]-c\\f[R].  The generated "
+"module configuration includes selected distribution, compression, kernel, "
+"locale, timezone, user, and builder values.  It does not include every "
+"\\f[B]build.conf\\f[R] value; boot-loader, menu, persistence, snapshot, and "
+"most cache or debugging settings are unavailable to ordinary module calls "
+"unless a module supplies them explicitly.\\fR"
 msgstr ""
+"CondinAPT kann einen nicht abgebildeten vollständigen Variablennamen nur "
+"verwenden, wenn diese Variable in der mit B<-c> übergebenen Konfiguration "
+"vorhanden ist. Die generierte Modulkonstruktion enthält die gewählte "
+"Distribution, Kompression, Kernel, Locale, Zeitzone, Benutzer- und "
+"Builderwerte. Nicht jeder Wert aus B<build.conf> ist enthalten; Bootloader-, "
+"Menü-, Persistenz-, Snapshot- sowie die meisten Cache- oder Debug-"
+"Einstellungen stehen normalen Modulen nicht zur Verfügung, es sei denn, ein "
+"Modul stellt sie explizit bereit."
+
+#. type: SH
+#: condinapt-minios.7:148
+#, no-wrap
+msgid "DERIVED VALUES"
+msgstr "ABGELEITETE WERTE"
+
+#. type: TP
+#: condinapt-minios.7:149
+#, no-wrap
+msgid "\\f[B]DISTRIBUTION_PROFILE\\fR"
+msgstr "\\f[B]DISTRIBUTION_PROFILE\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:161
-#, no-wrap
+#: condinapt-minios.7:154
 msgid ""
-"\\f[C]# Professional tools - only for toolbox and ultra\n"
-"audacity +{pv=toolbox|pv=ultra}\n"
-"kdenlive +{pv=toolbox|pv=ultra} +{de=xfce|de=lxqt}\n"
-"---\n"
-"# Distribution-specific packages from backports\n"
-"ffmpeg \\[at]bookworm-backports +d=bookworm\\fR\n"
-"\n"
+"Behavior profile derived from the selected suite, normally "
+"\\f[B]debian\\f[R] or \\f[B]ubuntu\\f[R].  Devuan suites use the Debian "
+"profile.\\fR"
 msgstr ""
+"Verhaltensprofil, abgeleitet von der gewählten Suite, in der Regel B<debian> "
+"oder B<ubuntu>. Devuan-Suites verwenden das Debian-Profil."
 
-#. type: SS
-#: condinapt-minios.7:162
+#. type: TP
+#: condinapt-minios.7:154
 #, no-wrap
-msgid "Driver Module"
-msgstr ""
+msgid "\\f[B]INIT_SYSTEM\\fR"
+msgstr "\\f[B]INIT_SYSTEM\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:171
-#, no-wrap
+#: condinapt-minios.7:158
 msgid ""
-"\\f[C]\n"
-"# Basic drivers\n"
-"mesa-utils\n"
-"xserver-xorg-video-all\\fR\n"
+"Derived init-system profile, normally \\f[B]systemd\\f[R] or "
+"\\f[B]sysvinit\\f[R].\\fR"
 msgstr ""
+"Abgeleitetes Init-System-Profil, in der Regel B<systemd> oder B<sysvinit>."
+
+#. type: TP
+#: condinapt-minios.7:158
+#, no-wrap
+msgid "\\f[B]KERNEL_SERIES\\f[R] and \\f[B]KERNEL_CAPABILITIES\\fR"
+msgstr "\\f[B]KERNEL_SERIES\\f[R] und \\f[B]KERNEL_CAPABILITIES\\fR"
+
+#. type: Plain text
+#: condinapt-minios.7:166
+msgid ""
+"Resolved kernel values appended to a temporary configuration used only by "
+"CondinAPT calls inside the \\f[B]01-kernel\\f[R] build flow.  "
+"\\f[B]MINIOS_KERNEL_SERIES\\f[R] is the user setting; "
+"\\f[B]KERNEL_SERIES\\f[R] is the detected series used by \\f[B]ks\\f[R].  "
+"Neither \\f[B]ks\\f[R] nor \\f[B]kc\\f[R] is propagated to ordinary later "
+"modules.\\fR"
+msgstr ""
+"Aufgelöste Kernel-Werte werden einer temporären Konfiguration hinzugefügt, "
+"die nur für CondinAPT-Aufrufe innerhalb des \\f[B]01-kernel\\f[R]-Build-"
+"Ablaufs verwendet wird. \\f[B]MINIOS_KERNEL_SERIES\\f[R] ist die "
+"Benutzereinstellung; \\f[B]KERNEL_SERIES\\f[R] ist die erkannte Serie, die "
+"von \\f[B]ks\\f[R] verwendet wird. Weder \\f[B]ks\\f[R] noch \\f[B]kc\\f[R] "
+"werden an nachfolgende Standardmodule weitergegeben.\\fR"
+
+#. type: SH
+#: condinapt-minios.7:166
+#, no-wrap
+msgid "PACKAGE LIST EXAMPLES"
+msgstr "BEISPIELE FÜR PAKETLISTEN"
+
+#. type: Plain text
+#: condinapt-minios.7:168
+msgid "Install additional codecs except in the minimum variant:"
+msgstr "Installieren Sie zusätzliche Codecs, außer in der Minimalvariante:"
 
 #. type: Plain text
 #: condinapt-minios.7:174
 #, no-wrap
 msgid ""
-"\\f[C]# NVIDIA drivers - only for non-free distributions\n"
-"nvidia-driver +d=bookworm -{pv=minimum&de=core}\\fR\n"
+"gstreamer1.0-plugins-base\n"
+"gstreamer1.0-plugins-good\n"
+"gstreamer1.0-plugins-bad -pv=minimum\n"
+"gstreamer1.0-libav -pv=minimum\n"
 msgstr ""
+"gstreamer1.0-plugins-base\n"
+"gstreamer1.0-plugins-good\n"
+"gstreamer1.0-plugins-bad -pv=minimum\n"
+"gstreamer1.0-libav -pv=minimum\n"
 
 #. type: Plain text
-#: condinapt-minios.7:178
-#, no-wrap
-msgid ""
-"\\f[C]# AMD drivers - for modern distributions\n"
-"firmware-amd-graphics +{d=trixie|d=noble}\n"
-"mesa-vulkan-drivers +{d=trixie|d=noble}\\fR\n"
-msgstr ""
+#: condinapt-minios.7:177
+msgid "Select applications by variant and desktop:"
+msgstr "Wählen Sie Anwendungen nach Variante und Desktop aus:"
 
 #. type: Plain text
-#: condinapt-minios.7:182
+#: condinapt-minios.7:181
 #, no-wrap
 msgid ""
-"\\f[C]# Old drivers - for old systems\n"
-"xserver-xorg-video-radeon +d=bookworm\\fR\n"
-"\n"
+"audacity +{pv=toolbox|pv=ultra}\n"
+"kdenlive +{pv=toolbox|pv=ultra} +{de=xfce|de=lxqt}\n"
 msgstr ""
+"audacity +{pv=toolbox|pv=ultra}\n"
+"kdenlive +{pv=toolbox|pv=ultra} +{de=xfce|de=lxqt}\n"
 
-#. type: SS
-#: condinapt-minios.7:183
+#. type: Plain text
+#: condinapt-minios.7:184
+msgid "Select a target release:"
+msgstr "Wählen Sie eine Ziel-Release aus:"
+
+#. type: Plain text
+#: condinapt-minios.7:187
 #, no-wrap
-msgid "Localization Module"
-msgstr ""
+msgid "ffmpeg \\[at]bookworm-backports +d=bookworm\n"
+msgstr "ffmpeg \\[at]bookworm-backports +d=bookworm\n"
 
 #. type: Plain text
 #: condinapt-minios.7:191
-#, no-wrap
 msgid ""
-"\\f[C]\n"
-"# Basic locales - always\n"
-"locales\\fR\n"
+"Inside \\f[B]linux-live/scripts/01-kernel/packages.list\\f[R], exclude DKMS "
+"packages when the selected kernel already has the capability:\\fR"
 msgstr ""
+"In \\f[B]linux-live/scripts/01-kernel/packages.list\\f[R] DKMS-Pakete "
+"ausschließen, wenn der gewählte Kernel die Fähigkeit bereits besitzt:\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:196
+#: condinapt-minios.7:195
 #, no-wrap
 msgid ""
-"\\f[C]# Russian localization\n"
-"language-pack-ru +lo=ru_RU\n"
-"fonts-liberation +lo=ru_RU\n"
-"firefox-esr-l10n-ru +lo=ru_RU +{de=xfce|de=lxqt}\\fR\n"
+"ntfs3-dkms -kc=ntfs3\n"
+"aufs-dkms -kc=aufs +kbd=true\n"
 msgstr ""
+"ntfs3-dkms -kc=ntfs3\n"
+"aufs-dkms -kc=aufs +kbd=true\n"
 
 #. type: Plain text
-#: condinapt-minios.7:200
-#, no-wrap
-msgid ""
-"\\f[C]# Multilingual support\n"
-"task-russian +ml=true +lo=ru_RU\n"
-"hunspell-ru +ml=true +lo=ru_RU\\fR\n"
+#: condinapt-minios.7:198
+msgid "Choose a package during planning, not after an APT transaction failure:"
 msgstr ""
+"Wählen Sie ein Paket während der Planung aus, nicht erst nach einem APT-"
+"Transaktionsfehler:"
+
+#. type: SH
+#: condinapt-minios.7:202
+#, no-wrap
+msgid "REBUILDING MODULES"
+msgstr "MODULE NEU ERSTELLEN"
 
 #. type: Plain text
-#: condinapt-minios.7:203
-#, no-wrap
+#: condinapt-minios.7:211
 msgid ""
-"\\f[C]# Keeping locales\n"
-"vlc-l10n +kl=true +{pv=toolbox|pv=ultra}\\fR\n"
+"\\f[B]build-modules\\f[R] skips a module whose SquashFS artifact is already "
+"present.  After changing a module, remove its existing artifact from the "
+"selected work directory\\[cq]s \\f[B]image/\\f[R] tree and rerun "
+"\\f[B]minios-live build-modules\\f[R].  The builder invalidates the "
+"following non-kernel module chain once an artifact is missing.  Kernel "
+"module rebuilding follows separate handling in the builder.\\fR"
 msgstr ""
+"\\f[B]build-modules\\f[R] überspringt ein Modul, dessen SquashFS-Artefakt "
+"bereits vorhanden ist. Nach einer Änderung an einem Modul entfernen Sie das "
+"vorhandene Artefakt aus dem \\f[B]image/\\f[R]-Verzeichnis des gewählten "
+"Arbeitsverzeichnisses und führen Sie \\f[B]minios-live build-modules\\f[R] "
+"erneut aus. Der Builder invalidiert die folgende Nicht-Kernel-Modulkette, "
+"sobald ein Artefakt fehlt. Das Neuerstellen von Kernel-Modulen erfolgt im "
+"Builder separat.\\fR"
+
+#. type: TP
+#: condinapt-minios.7:212
+#, no-wrap
+msgid "\\f[B]linux-live/condinapt\\fR"
+msgstr "\\f[B]linux-live/condinapt\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:209
-#, no-wrap
-msgid ""
-"\\f[C]# Regional settings for different locales\n"
-"language-pack-pt +lo=pt_BR\n"
-"language-pack-de +lo=de_DE\n"
-"language-pack-fr +lo=fr_FR\\fR\n"
-"\n"
-msgstr ""
+#: condinapt-minios.7:215
+msgid "CondinAPT implementation in a source checkout."
+msgstr "CondinAPT-Implementierung in einem ausgecheckten Quellverzeichnis."
 
-#. type: SS
-#: condinapt-minios.7:210
+#. type: TP
+#: condinapt-minios.7:215
 #, no-wrap
-msgid "Advanced Filter Usage"
-msgstr ""
+msgid "\\f[B]linux-live/condinapt.map\\fR"
+msgstr "\\f[B]linux-live/condinapt.map\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:219
-#, no-wrap
-msgid ""
-"\\f[C]\n"
-"# DKMS modules with kernel and distribution conditions\n"
-"ntfs3-dkms -ka=true -d=buster -d=trixie -d=sid\n"
-"zfs-dkms +{pv=toolbox|pv=ultra} +da=amd64 +kbd=true -kf=none\\fR\n"
-msgstr ""
+#: condinapt-minios.7:218
+msgid "MiniOS filter mapping in a source checkout."
+msgstr "MiniOS-Filterzuordnung in einem ausgecheckten Quellverzeichnis."
 
 #. type: Plain text
-#: condinapt-minios.7:223
+#: condinapt-minios.7:221
+msgid "Default source-tree build configuration."
+msgstr "Standard-Build-Konfiguration für den Quellbaum."
+
+#. type: TP
+#: condinapt-minios.7:221
 #, no-wrap
-msgid ""
-"\\f[C]# Drivers for old systems\n"
-"broadcom-sta-dkms -d=jammy -ka=true -da=i386\n"
-"aufs-dkms +dt=debian +d=buster\\fR\n"
-msgstr ""
+msgid "\\f[B]linux-live/scripts/\\fR"
+msgstr "\\f[B]linux-live/scripts/\\fR"
+
+#. type: Plain text
+#: condinapt-minios.7:224
+msgid "Reusable module sources."
+msgstr "Wiederverwendbare Modulquellen."
+
+#. type: TP
+#: condinapt-minios.7:224
+#, no-wrap
+msgid "\\f[B]linux-live/environments/\\fR"
+msgstr "\\f[B]linux-live/environments/\\fR"
 
 #. type: Plain text
 #: condinapt-minios.7:227
+msgid "Ordered module selections for each desktop environment."
+msgstr "Sortierte Modulauswahl für jede Desktop-Umgebung."
+
+#. type: TP
+#: condinapt-minios.7:227
 #, no-wrap
-msgid ""
-"\\f[C]# Exclusion for new distributions\n"
-"realtek-rtl8821cu-dkms -d=trixie -d=sid\n"
-"firmware-b43-installer -d=bionic\\fR\n"
-msgstr ""
+msgid "\\f[B]/usr/share/minios-live/\\fR"
+msgstr "\\f[B]/usr/share/minios-live/\\fR"
 
 #. type: Plain text
-#: condinapt-minios.7:230
-#, no-wrap
+#: condinapt-minios.7:231
 msgid ""
-"\\f[C]# Complex alternatives with filters\n"
-"exfatprogs -pv=minimum || exfat-utils -pv=minimum && exfat-fuse -pv=minimum\\fR\n"
+"Installed build scripts, module sources, environments, CondinAPT, and filter "
+"map."
 msgstr ""
+"Installierte Build-Skripte, Modulquellen, Umgebungen, CondinAPT und "
+"Filterzuordnung."
+
+#. type: Plain text
+#: condinapt-minios.7:234
+msgid "Installed default build configuration."
+msgstr "Installierte Standard-Build-Konfiguration."
 
 #. type: Plain text
 #: condinapt-minios.7:237
-#, no-wrap
-msgid ""
-"\\f[C]# Localization with exclusions and conditions\n"
-"vlc-l10n -lo=en_US +{pv=toolbox|pv=ultra}\n"
-"language-pack-gnome-ru-base +lo=ru_RU +dt=ubuntu\n"
-"language-pack-gnome-ru-base +ml=true +dt=ubuntu\n"
-"language-pack-gnome-ru-base +kl=true +dt=ubuntu\\fR\n"
-"\n"
-msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:238
-#, no-wrap
-msgid "Optimization for MiniOS"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:241
-msgid "Grouping by functionality:"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:247
-#, no-wrap
-msgid ""
-"\\f[C]\n"
-"#=== Core System ===\n"
-"systemd +pv=standard +pv=toolbox +pv=ultra\n"
-"dbus\\fR\n"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:252
-#, no-wrap
-msgid ""
-"\\f[C]#=== Desktop Environment ===\n"
-"xfce4-panel +de=xfce\n"
-"lxqt-panel +de=lxqt\n"
-"fluxbox +de=flux\\fR\n"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:258
-#, no-wrap
-msgid ""
-"\\f[C]#=== Applications by Variant ===\n"
-"firefox-esr +{pv=standard|pv=toolbox|pv=ultra}\n"
-"thunderbird +{pv=toolbox|pv=ultra}\n"
-"libreoffice +pv=ultra\\fR\n"
-"\n"
-msgstr ""
-
-#. type: SH
-#: condinapt-minios.7:259
-#, no-wrap
-msgid "INTEGRATION WITH BUILD PROCESS"
-msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:260
-#, no-wrap
-msgid "Module Environment Variables"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:263
-msgid ""
-"Within the MiniOS module context, the following variables are available:"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:263
-#, no-wrap
-msgid "\\f[B]$CWD\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:266
-msgid "Current module directory"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:266
-#, no-wrap
-msgid "\\f[B]$LIVEKITNAME\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:269
-msgid "System name (usually \\[lq]minios\\[rq])"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:269
-#, no-wrap
-msgid "\\f[B]$MODULE\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:272
-msgid "Current module name"
-msgstr ""
-
-#. type: SS
-#: condinapt-minios.7:272
-#, no-wrap
-msgid "Using minioslib"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:275
-msgid "Example installation script with conditional execution:"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:289
-#, no-wrap
-msgid ""
-"\\f[C]# Check module conditions\n"
-"if [ \\[dq]$PACKAGE_VARIANT\\[dq] = \\[dq]minimum\\[dq] ] && [ \\[dq]$DESKTOP_ENVIRONMENT\\[dq] = \\[dq]core\\[dq] ]; then\n"
-"    echo \\[dq]Skipping module for minimal core build\\[dq]\n"
-"    exit 0\n"
-"fi\\fR\n"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:296
-#, no-wrap
-msgid ""
-"\\f[C]# Install packages\n"
-"/usr/share/minios-live/condinapt \\[rs]\n"
-"    -l \\[dq]$CWD/packages.list\\[dq] \\[rs]\n"
-"    -c /etc/minios-live/build.conf \\[rs]\n"
-"    -m /usr/share/minios-live/condinapt.map\\fR\n"
-"\n"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:298
-#, no-wrap
-msgid "\\f[B]/etc/minios-live/build.conf\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:301
-msgid "Main MiniOS build configuration file"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:301
-#, no-wrap
-msgid "\\f[B]/usr/share/minios-live/condinapt.map\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:304
-msgid "Filter mapping for MiniOS build system"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:304
-#, no-wrap
-msgid "\\f[B]/usr/share/minios-live/scripts/XX-module-name/packages.list\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:307
-msgid "Package list for each module"
-msgstr ""
-
-#. type: TP
-#: condinapt-minios.7:307
-#, no-wrap
-msgid "\\f[B]/usr/share/minios-live/scripts/XX-module-name/install\\fR"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:310
-msgid "Module installation script"
-msgstr ""
-
-#. type: Plain text
-#: condinapt-minios.7:314
 msgid ""
 "\\f[B]condinapt\\f[R](1), \\f[B]minios-live\\f[R](1), \\f[B]minios-cmd\\f[R]"
 "(1)\\fR"
 msgstr ""
+"\\f[B]condinapt\\f[R](1), \\f[B]minios-live\\f[R](1), \\f[B]minios-cmd\\f[R]"
+"(1)\\fR"

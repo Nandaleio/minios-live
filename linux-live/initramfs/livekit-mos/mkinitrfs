@@ -43,6 +43,7 @@ Options:
   -c,  --cloud                           Enable cloud support
   -cm, --compress-modules                Compress kernel modules
   -dm, --decompress-modules              Decompress kernel modules
+  --crypt                                Include encrypted persistence support
   -d,  --debug                           Keep debug files
   -h,  --help                            Display this help message and exit
 
@@ -67,6 +68,7 @@ MODULE_COMPRESS="auto"
 DECOMPRESS_MODULES="false"
 COMPRESS_MODULES="false"
 DEBUG="false"
+CRYPT="false"
 
 # Parse options
 while [[ $# -gt 0 ]]; do
@@ -97,6 +99,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     -d | --debug)
         DEBUG="true"
+        shift
+        ;;
+    --crypt)
+        CRYPT="true"
         shift
         ;;
     -h | --help)
@@ -210,6 +216,32 @@ copy_including_deps() {
     fi
 }
 
+normalize_dynblk_module() {
+    local DIR="$INITRAMFS/$LMK/updates/dkms" SOURCE="" CANDIDATE COUNT=0 TARGET
+    [ -d "$DIR" ] || return 0
+    for CANDIDATE in "$DIR/dynblk.ko" "$DIR/dynblk.ko.gz" "$DIR/dynblk.ko.xz" "$DIR/dynblk.ko.zst"; do
+        [ -f "$CANDIDATE" ] || continue
+        SOURCE="$CANDIDATE"
+        COUNT=$((COUNT + 1))
+    done
+    [ "$COUNT" -eq 0 ] && return 0
+    if [ "$COUNT" -ne 1 ]; then
+        echo "E: Multiple DynBlk module files found in initramfs input" >&2
+        return 1
+    fi
+    TARGET="$DIR/dynblk.ko"
+    case "$SOURCE" in
+        "$TARGET") return 0 ;;
+        *.gz) gzip -cd "$SOURCE" >"$TARGET.tmp" ;;
+        *.xz) xz -cd "$SOURCE" >"$TARGET.tmp" ;;
+        *.zst) zstd -cd "$SOURCE" >"$TARGET.tmp" ;;
+        *) return 1 ;;
+    esac
+    mv "$TARGET.tmp" "$TARGET"
+    rm -f "$SOURCE"
+    chmod 0644 "$TARGET"
+}
+
 copy_files() {
     local DEST_DIR FILES DIR FILE
     DEST_DIR=$1
@@ -227,6 +259,17 @@ copy_files() {
         fi
         cp "$ORIGIN_DIR/$DIR/$FILE" "$DEST_DIR/$DIR/$FILE"
     done
+}
+
+install_bundled_crypt() {
+    local PAYLOAD="$ORIGIN_DIR"
+    local LIST="$ORIGIN_DIR/../buildroot/crypt_payload_files.txt" FILE
+
+    [ -f "$LIST" ] || return 1
+    while IFS= read -r FILE; do
+        [ -e "$PAYLOAD/$FILE" ] || [ -L "$PAYLOAD/$FILE" ] || return 1
+    done <"$LIST"
+    tar -C "$PAYLOAD" -cf - -T "$LIST" | tar -C "$INITRAMFS" -xf -
 }
 
 has_config() {
@@ -312,8 +355,9 @@ FILES=(
     bin/mke2fs
     bin/resize2fs
     bin/e2fsck
+    bin/unsquashfs
     bin/mc
-    bin/@mount.dynfilefs
+    bin/dynfilefs
     bin/@mount.httpfs2
     bin/@mount.ntfs-3g
     bin/ncurses-menu
@@ -327,6 +371,7 @@ FILES=(
 copy_files "$INITRAMFS" "${FILES[@]}"
 
 chmod a+x "$INITRAMFS/bin/"*
+ln -s dynfilefs "$INITRAMFS/bin/@mount.dynfilefs"
 chmod a+x "$INITRAMFS/mkinitrfs"
 mkdir -p "$INITRAMFS/etc/modprobe.d"
 echo "options loop max_loop=64" >"$INITRAMFS/etc/modprobe.d/local-loop.conf"
@@ -349,6 +394,21 @@ mknod "$INITRAMFS/dev/tty3" c 4 3
 mknod "$INITRAMFS/dev/tty4" c 4 4
 
 copy_including_deps "/$LMK/kernel/fs/aufs"
+copy_including_deps "/$LMK/updates/dkms/aufs-ng."*
+# Optional format-1 dynblk device, distinct from the legacy FUSE binary.
+# Keep dynblk.ko plain so the bundled BusyBox modprobe never needs a module
+# decompressor merely to attach persistence.
+copy_including_deps "/$LMK/updates/dkms/dynblk."*
+normalize_dynblk_module
+if find "$INITRAMFS/$LMK" -type f -name 'dynblk.ko' -print -quit | grep -q .; then
+    copy_files "$INITRAMFS" bin/dynblk
+    chmod a+x "$INITRAMFS/bin/dynblk"
+    ln -sf dynblk "$INITRAMFS/bin/mount.dynblk"
+    touch "$INITRAMFS/etc/minios-initramfs-dynblk"
+    if "$INITRAMFS/bin/dynblk" limits --format vmdk >/dev/null 2>&1; then
+        printf '%s\n' 'vmdk-session-v1' >"$INITRAMFS/etc/minios-initramfs-dynblk"
+    fi
+fi
 copy_including_deps "/$LMK/kernel/fs/overlayfs"
 copy_including_deps "/$LMK/kernel/fs/ext2"
 copy_including_deps "/$LMK/kernel/fs/ext3"
@@ -367,9 +427,14 @@ copy_including_deps "/$LMK/kernel/fs/efivarfs" # for Clonezilla
 
 copy_including_deps "/$LMK/kernel/crypto/lz4"*.*
 copy_including_deps "/$LMK/kernel/crypto/zstd."*
+# Optional providers used by format-1 dynblk; the driver still rejects a
+# missing provider instead of silently changing the stored codec.
+copy_including_deps "/$LMK/kernel/crypto/lzo."*
+copy_including_deps "/$LMK/kernel/crypto/lzo-rle."*
+copy_including_deps "/$LMK/kernel/crypto/deflate."*
 
-# crc32c is needed for ext4, but I don't know which one, add them all, they are small
-find "/$LMK/kernel/" | grep crc32c | while read LINE; do
+# crc32/crc32c modules are needed for ext4
+find "/$LMK/kernel/" -name '*crc32*' | while read -r LINE; do
     copy_including_deps "$LINE"
 done
 
@@ -388,6 +453,7 @@ copy_including_deps "/$LMK/kernel/drivers/hid/usbhid"
 copy_including_deps "/$LMK/kernel/drivers/hid/hid."*
 copy_including_deps "/$LMK/kernel/drivers/hid/uhid."*
 copy_including_deps "/$LMK/kernel/drivers/hid/hid-generic."*
+copy_including_deps "/$LMK/kernel/drivers/hid/hid-apple."* # Apple USB keyboards
 
 # disk and cdrom drivers
 copy_including_deps "/$LMK/kernel/drivers/cdrom"
@@ -432,6 +498,30 @@ copy_including_deps "/$LMK/modules."*
 
 copy_including_deps "/usr/share/terminfo/l/linux"
 
+if [ "$CRYPT" = "true" ]; then
+    if ! install_bundled_crypt; then
+        for TOOL in cryptsetup; do
+            command -v "$TOOL" >/dev/null 2>&1 || {
+                echo "E: --crypt requires bundled payload or build-host $TOOL" >&2
+                exit 1
+            }
+            copy_including_deps "$(command -v "$TOOL")"
+        done
+    fi
+    if ! compgen -G "/$LMK/kernel/drivers/md/dm-crypt.*" >/dev/null && ! grep -q '^CONFIG_DM_CRYPT=y$' <<<"$KCONFIG"; then
+        echo "E: --crypt requires dm-crypt support in kernel $KERNEL" >&2
+        exit 1
+    fi
+    # dm-crypt needs the kernel crypto implementations selected by its dependencies.
+    copy_including_deps "/$LMK/kernel/drivers/md/dm-crypt."*
+    copy_including_deps "/$LMK/kernel/crypto"
+    printf '%s\n' 'luks-layer-v1' >"$INITRAMFS/etc/minios-initramfs-crypt"
+fi
+
+# Storage policy lives in minios-boot and must be advertised by the initrd,
+# rather than guessed from the version of the userspace Configurator package.
+printf '%s\n' 'perch-storage-v1' >"$INITRAMFS/etc/minios-initramfs-storage"
+
 # Before module unpacking
 if [ "$DECOMPRESS_MODULES" = "true" ] || [ "$COMPRESS_MODULES" = "true" ]; then
     find "$INITRAMFS" -name "*.ko.gz" -exec gunzip {} \;
@@ -442,13 +532,13 @@ fi
 # Compress kernel modules if the corresponding flag is set.
 if [ "$COMPRESS_MODULES" = "true" ]; then
     if [ "$MODULE_COMPRESS" = "xz" ]; then
-        find "$INITRAMFS" -type f -name "*.ko" -exec xz -z {} \;
+        find "$INITRAMFS" -type f -name "*.ko" ! -path "*/updates/dkms/dynblk.ko" -exec xz -z {} \;
         MODULE_EXT=".ko.xz"
     elif [ "$MODULE_COMPRESS" = "zstd" ]; then
-        find "$INITRAMFS" -type f -name "*.ko" -exec zstd -z --rm {} \;
+        find "$INITRAMFS" -type f -name "*.ko" ! -path "*/updates/dkms/dynblk.ko" -exec zstd -z --rm {} \;
         MODULE_EXT=".ko.zst"
     else
-        find "$INITRAMFS" -type f -name "*.ko" -exec gzip -9 {} \;
+        find "$INITRAMFS" -type f -name "*.ko" ! -path "*/updates/dkms/dynblk.ko" -exec gzip -9 {} \;
         MODULE_EXT=".ko.gz"
     fi
 fi
@@ -480,6 +570,7 @@ depmod -b "$INITRAMFS" "$KERNEL"
 echo "root::0:0::/root:/bin/bash" >"$INITRAMFS/etc/passwd"
 touch "$INITRAMFS/etc/"{m,fs}tab
 cp /etc/minios-release "$INITRAMFS/etc/"
+printf 'NAME=MiniOS\nID=minios\n' >"$INITRAMFS/etc/initrd-release"
 
 FILES=(init shutdown lib/livekitlib)
 copy_files "$INITRAMFS" "${FILES[@]}"

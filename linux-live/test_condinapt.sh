@@ -15,6 +15,7 @@ set -u
 set -o pipefail
 
 # --- Test Configuration ---
+TEST_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONDINAPT_SCRIPT_PATH="${1-}"
 if [[ -z "${CONDINAPT_SCRIPT_PATH}" ]] || [[ ! -x "${CONDINAPT_SCRIPT_PATH}" ]]; then
     echo "Error: Path to the executable condinapt script is required." >&2
@@ -85,9 +86,26 @@ exit 0
 EOF
 
     # Create empty mock commands for other tools
-    for cmd in apt-mark tput dpkg-query; do
+    for cmd in apt-mark tput; do
         echo -e '#!/bin/bash' >"${MOCK_BIN_DIR}/${cmd}"
     done
+    cat >"${MOCK_BIN_DIR}/dpkg-query" <<'EOF'
+#!/bin/bash
+package="${!#}"
+for pkg_info in ${TEST_INSTALLED_PACKAGES-}; do
+    pkg_name="${pkg_info%%:*}"
+    pkg_ver="${pkg_info#*:}"
+    if [ "$pkg_name" = "$package" ]; then
+        if [[ "$*" == *db:Status-Status* ]]; then
+            echo installed
+        else
+            echo "$pkg_ver"
+        fi
+        exit 0
+    fi
+done
+exit 1
+EOF
     chmod +x "${MOCK_BIN_DIR}"/*
 }
 
@@ -192,23 +210,30 @@ assert_not_installs() {
 
 # --- Test Case Implementations ---
 create_common_files() {
+    export TEST_INSTALLED_PACKAGES=""
     cat >"${TEST_DIR}/config.sh" <<EOF
 DISTRIBUTION="trixie"
+DISTRIBUTION_ARCH="amd64"
 DESKTOP_ENVIRONMENT="xfce"
 PACKAGE_VARIANT="standard"
 INSTALL_KERNEL="true"
 KERNEL_FLAVOUR="none"
-KERNEL_AUFS="false"
+KERNEL_PROVIDER="distribution"
+KERNEL_SERIES="6.12"
+KERNEL_CAPABILITIES=("ntfs3" "rtw88_8821cu" "btf_modules")
 # These variables are intentionally not in the filter map
 KERNEL_BUILD_DKMS="true"
 EOF
     cat >"${TEST_DIR}/filter.map" <<EOF
 d=DISTRIBUTION
+da=DISTRIBUTION_ARCH
 de=DESKTOP_ENVIRONMENT
 pv=PACKAGE_VARIANT
 ik=INSTALL_KERNEL
 kf=KERNEL_FLAVOUR
-ka=KERNEL_AUFS
+kp=KERNEL_PROVIDER
+ks=KERNEL_SERIES
+kc=KERNEL_CAPABILITIES
 EOF
 }
 
@@ -240,10 +265,75 @@ test_conjunction_and() {
     assert_installs "exfat-utils" "exfat-fuse"
 }
 
+run_kernel_package_selection() {
+    export TEST_AVAILABLE_PACKAGES="aufs-ng-dkms:0.1"
+    cp "${TEST_SCRIPT_ROOT}/scripts/01-kernel/packages.list" \
+        "${TEST_DIR}/packages.list"
+    "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" \
+        -l "${TEST_DIR}/packages.list" -s
+}
+
+test_aufs_ng_selected_for_612() {
+    create_common_files
+    run_kernel_package_selection
+    assert_installs "aufs-ng-dkms"
+}
+
+test_aufs_ng_skipped_for_other_series() {
+    create_common_files
+    sed -i 's/KERNEL_SERIES="6.12"/KERNEL_SERIES="6.1"/' "${TEST_DIR}/config.sh"
+    run_kernel_package_selection
+    assert_not_installs "aufs-ng-dkms"
+}
+
+test_aufs_ng_skipped_for_32_bit() {
+    create_common_files
+    sed -i 's/DISTRIBUTION_ARCH="amd64"/DISTRIBUTION_ARCH="i386"/' "${TEST_DIR}/config.sh"
+    run_kernel_package_selection
+    assert_not_installs "aufs-ng-dkms"
+}
+
+test_aufs_ng_skipped_for_builtin_aufs() {
+    create_common_files
+    sed -i 's/"btf_modules")/"btf_modules" "aufs")/' "${TEST_DIR}/config.sh"
+    run_kernel_package_selection
+    assert_not_installs "aufs-ng-dkms"
+}
+
+test_check_only_alternative_fallback() {
+    create_common_files
+    export TEST_AVAILABLE_PACKAGES="missing:1.0 installed:2.0"
+    export TEST_INSTALLED_PACKAGES="installed:2.0"
+    echo "missing || installed" >"${TEST_DIR}/packages.list"
+    "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -C
+    ! grep -q 'not installed' "${TEST_DIR}/stderr.log"
+}
+
+test_check_only_mandatory_alternative_fallback() {
+    create_common_files
+    export TEST_AVAILABLE_PACKAGES="missing:1.0 installed:2.0"
+    export TEST_INSTALLED_PACKAGES="installed:2.0"
+    echo "!missing || installed" >"${TEST_DIR}/packages.list"
+    "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -C
+    ! grep -q 'Mandatory package' "${TEST_DIR}/stderr.log"
+}
+
+test_check_only_missing_alternatives() {
+    create_common_files
+    export TEST_AVAILABLE_PACKAGES="missing-one:1.0 missing-two:2.0"
+    export TEST_INSTALLED_PACKAGES=""
+    echo "missing-one || missing-two" >"${TEST_DIR}/packages.list"
+    if "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -C; then
+        echo "Check-only unexpectedly accepted missing alternatives." >&2
+        return 1
+    fi
+    grep -q 'sudo apt install missing-one missing-two' "${TEST_DIR}/stdout.log"
+}
+
 test_priority_queue() {
     create_common_files
     export TEST_AVAILABLE_PACKAGES="nano:1.0 htop:3.0"
-    echo "htop" >"${TEST_DIR}/packages.list"
+    printf '%s\n' nano htop >"${TEST_DIR}/packages.list"
     echo "nano" >"${TEST_DIR}/priority.list"
     "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -P "${TEST_DIR}/priority.list" -s -v
     local log_out="${TEST_DIR}/stdout.log"
@@ -255,6 +345,35 @@ test_priority_queue() {
         echo -e "\nAssertion failed: Priority queue order is incorrect." >&2
         return 1
     fi
+}
+
+test_priority_target_queue_order() {
+    create_common_files
+    export TEST_AVAILABLE_PACKAGES="priority-main:1 normal-main:1 priority-target:1 normal-target:1"
+    cat >"${TEST_DIR}/packages.list" <<EOF
+priority-main
+normal-main
+priority-target @bookworm
+normal-target @bookworm
+EOF
+    echo '^priority-' >"${TEST_DIR}/priority.list"
+    "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -P "${TEST_DIR}/priority.list" -s -v
+
+    local log_out="${TEST_DIR}/stdout.log"
+    local package expected actual
+    for package in priority-main priority-target normal-main normal-target; do
+        case "$package" in
+        priority-main) expected=1 ;;
+        priority-target) expected=2 ;;
+        normal-main) expected=3 ;;
+        normal-target) expected=4 ;;
+        esac
+        actual=$(grep "$package will be installed" "$log_out" -B1 | grep "Queue #" | sed 's/.*#\([0-9]*\):.*/\1/')
+        if [ "$actual" != "$expected" ]; then
+            echo "Expected $package in queue $expected, got ${actual:-none}." >&2
+            return 1
+        fi
+    done
 }
 
 test_queue_separator() {
@@ -356,10 +475,24 @@ test_direct_variable_pass() {
 test_direct_variable_fail() {
     create_common_files
     export TEST_AVAILABLE_PACKAGES="linux-image-rt-amd64:6.1"
-    # KERNEL_AUFS is "false" in config. This filter requires "true", so it should fail.
-    echo "linux-image-rt-amd64 +KERNEL_AUFS=true" >"${TEST_DIR}/packages.list"
+    # KERNEL_PROVIDER is "distribution" in config. This filter requires "minios".
+    echo "linux-image-rt-amd64 +KERNEL_PROVIDER=minios" >"${TEST_DIR}/packages.list"
     "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -s
     assert_not_installs "linux-image-rt-amd64"
+}
+
+test_kernel_capability_exclusion() {
+    create_common_files
+    export TEST_AVAILABLE_PACKAGES="ntfs3-dkms:1.0 aufs-dkms:1.0 dwarves:1.0"
+    cat >"${TEST_DIR}/packages.list" <<EOF
+ntfs3-dkms -kc=ntfs3
+aufs-dkms -kc=aufs
+pahole +kc=btf_modules || dwarves +kc=btf_modules
+EOF
+    "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -s
+    assert_not_installs "ntfs3-dkms"
+    assert_installs "aufs-dkms"
+    assert_installs "dwarves"
 }
 
 # === Section: Group Filters (+{...} and -{...}) ===
@@ -456,7 +589,7 @@ test_complex_mandatory_package_reports_error() {
     fi
 }
 
-test_complex_priority_overrides_main_list_filter() {
+test_complex_priority_preserves_main_list_filter() {
     create_common_files
     export TEST_AVAILABLE_PACKAGES="htop:3.0 nano:1.0"
     echo "htop" >"${TEST_DIR}/priority.list"
@@ -465,7 +598,8 @@ htop -de=xfce
 nano +de=xfce
 EOF
     "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -P "${TEST_DIR}/priority.list" -s
-    assert_installs "htop" "nano"
+    assert_not_installs "htop"
+    assert_installs "nano"
 }
 
 test_complex_multiple_positive_filters_pass() {
@@ -474,6 +608,33 @@ test_complex_multiple_positive_filters_pass() {
     echo "dkms +de=xfce +pv=standard" >"${TEST_DIR}/packages.list"
     "${CONDINAPT_SCRIPT_PATH}" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -s
     assert_installs "dkms"
+}
+
+test_wallpaper_package_selection() {
+    local variant=$1 desktop=$2 expected=$3
+    local source_dir
+    local -a wallpaper_packages=(
+        minios6-wallpapers-minimum
+        minios6-wallpapers-flux
+        minios6-wallpapers-standard
+        minios6-wallpapers-toolbox
+        minios6-wallpapers-ultra
+    )
+
+    create_common_files
+    sed -i \
+        -e "s/^DESKTOP_ENVIRONMENT=.*/DESKTOP_ENVIRONMENT=\"$desktop\"/" \
+        -e "s/^PACKAGE_VARIANT=.*/PACKAGE_VARIANT=\"$variant\"/" \
+        "${TEST_DIR}/config.sh"
+    source_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+    grep '^minios6-' "$source_dir/scripts/04-xfce-desktop/packages.list" >"${TEST_DIR}/packages.list"
+    export TEST_AVAILABLE_PACKAGES="minios6-artwork:6.0.1 minios6-wallpapers:6.0.1 minios6-wallpapers-minimum:6.0.1 minios6-wallpapers-flux:6.0.1 minios6-wallpapers-standard:6.0.1 minios6-wallpapers-toolbox:6.0.1 minios6-wallpapers-ultra:6.0.1"
+
+    "$CONDINAPT_SCRIPT_PATH" -c "${TEST_DIR}/config.sh" -m "${TEST_DIR}/filter.map" -l "${TEST_DIR}/packages.list" -s
+    assert_installs minios6-artwork "$expected"
+    for package in "${wallpaper_packages[@]}"; do
+        [ "$package" = "$expected" ] || assert_not_installs "$package"
+    done
 }
 
 # --- Main Test Runner ---
@@ -490,7 +651,15 @@ main() {
     run_test "Simple package installation" test_simple_install
     run_test "Alternative operator (||)" test_alternative_or
     run_test "Conjunction operator (&&)" test_conjunction_and
+    run_test "aufs-ng selected for Linux 6.12" test_aufs_ng_selected_for_612
+    run_test "aufs-ng skipped for other kernel series" test_aufs_ng_skipped_for_other_series
+    run_test "aufs-ng skipped for 32-bit userspace" test_aufs_ng_skipped_for_32_bit
+    run_test "aufs-ng skipped for built-in AUFS" test_aufs_ng_skipped_for_builtin_aufs
+    run_test "Check-only accepts installed alternative" test_check_only_alternative_fallback
+    run_test "Check-only accepts installed mandatory alternative" test_check_only_mandatory_alternative_fallback
+    run_test "Check-only reports missing alternatives" test_check_only_missing_alternatives
     run_test "Priority queue (-P)" test_priority_queue
+    run_test "Priority target queue order" test_priority_target_queue_order
     run_test "Queue separator '---'" test_queue_separator
 
     echo
@@ -504,6 +673,7 @@ main() {
     echo "${BOLD}${CYAN}--- Section: Direct Variable Filters ---${ENDCOLOR}"
     run_test "Direct variable filter pass" test_direct_variable_pass
     run_test "Direct variable filter fail" test_direct_variable_fail
+    run_test "Kernel capability array exclusion" test_kernel_capability_exclusion
 
     echo
     echo "${BOLD}${CYAN}--- Section: Group Filters (+{} and -{}) ---${ENDCOLOR}"
@@ -521,8 +691,16 @@ main() {
     run_test "Operator Precedence (&& and ||)" test_complex_and_or_precedence
     run_test "Combined Group and Simple Filters" test_complex_group_and_simple_filters
     run_test "Mandatory Package Failure Reports Error" test_complex_mandatory_package_reports_error
-    run_test "Priority List Overrides Main List Filters" test_complex_priority_overrides_main_list_filter
+    run_test "Priority List Preserves Main List Filters" test_complex_priority_preserves_main_list_filter
     run_test "Multiple Positive Filters of Different Types" test_complex_multiple_positive_filters_pass
+
+    echo
+    echo "${BOLD}${CYAN}--- Section: MiniOS Package Lists ---${ENDCOLOR}"
+    run_test "Minimum wallpaper package" test_wallpaper_package_selection minimum xfce minios6-wallpapers-minimum
+    run_test "Flux wallpaper package" test_wallpaper_package_selection minimum flux minios6-wallpapers-flux
+    run_test "Standard wallpaper package" test_wallpaper_package_selection standard xfce minios6-wallpapers-standard
+    run_test "Toolbox wallpaper package" test_wallpaper_package_selection toolbox xfce minios6-wallpapers-toolbox
+    run_test "Ultra wallpaper package" test_wallpaper_package_selection ultra xfce minios6-wallpapers-ultra
 
     if [ -f "${MASTER_LOG_FILE}" ]; then
         sed -i 's/\x1B\[[0-9;]*[JKmsu]//g' "${MASTER_LOG_FILE}"

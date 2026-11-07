@@ -5,52 +5,191 @@ set -o pipefail # exit on pipeline error
 set -u          # treat unset variable as error
 
 . "/minioslib" || exit 1
+console_colors
 . "/minios_build.conf" || exit 1
 
-if [ "${KERNEL_BUILD_DKMS}" = "true" ]; then
-    KERNEL="$(file /boot/vmlinuz-* | grep -oP 'version \K[^\s]+')"
-    # Determine the kernel version (major.minor).
-    KERNEL_VERSION=$(echo "$KERNEL" | cut -d'.' -f1,2)
+kernel_release_series() {
+    local RELEASE="$1"
 
-    # AUFS kernel headers selection (MiniOS custom kernel)
-    if [ "${KERNEL_AUFS}" = "true" ]; then
-        HEADERS="linux-headers-${KERNEL_VERSION}-mos-${KERNEL_ARCH}"
-    # Standard kernel headers selection
-    elif [ "${DISTRIBUTION_TYPE}" = "debian" ]; then
-        if [ "${KERNEL_FLAVOUR}" = "none" ]; then
-            HEADERS="linux-headers-${KERNEL_ARCH}"
-        else
-            HEADERS="linux-headers-${KERNEL_FLAVOUR}-${KERNEL_ARCH}"
+    if [[ "${RELEASE}" =~ ^([0-9]+)\.([0-9]+)([.-]|$) ]]; then
+        printf '%s.%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+        return 0
+    fi
+    return 1
+}
+
+split_dkms_package_list() {
+    local INPUT="$1" PREREQUISITES="$2" DKMS_PACKAGES="$3"
+    local LINE DKMS_SECTION=false
+
+    : >"${PREREQUISITES}"
+    : >"${DKMS_PACKAGES}"
+    while IFS= read -r LINE || [ -n "${LINE}" ]; do
+        if [ "${LINE}" = '# BEGIN DKMS PACKAGES' ]; then
+            DKMS_SECTION=true
+            continue
         fi
-    elif [ "${DISTRIBUTION_TYPE}" = "ubuntu" ]; then
-        if [ "${KERNEL_FLAVOUR}" = "none" ]; then
-            HEADERS="linux-headers-generic"
+        case "${LINE}" in
+        '' | \#*) continue ;;
+        esac
+        if [ "${DKMS_SECTION}" = true ]; then
+            printf '%s\n' "${LINE}" >>"${DKMS_PACKAGES}"
         else
-            HEADERS="linux-headers-${KERNEL_FLAVOUR}"
+            printf '%s\n' "${LINE}" >>"${PREREQUISITES}"
         fi
+    done <"${INPUT}"
+    if [ "${DKMS_SECTION}" != true ]; then
+        printf 'DKMS package boundary is missing from %s\n' "${INPUT}" >&2
+        return 1
     fi
+}
 
-    # Check that the fixed build package list exists.
-    if [ ! -f "/packages.list" ]; then
-        error "Fixed build package list not found: /packages.list"
+prepare_minios_i386_headers() {
+    local HEADERS TOOL
+    local HOST_CFLAGS=(-O2 -std=gnu11 -I scripts/include -I tools/include)
+    local MODPOST_OBJECTS=(scripts/mod/modpost.o scripts/mod/file2alias.o scripts/mod/sumversion.o)
+    local HOST_TOOLS=(
+        scripts/basic/fixdep
+        scripts/genksyms/genksyms
+        scripts/mod/modpost
+        scripts/sign-file
+    )
+
+    HEADERS="$(readlink -f "${MODULES_ROOT}/build")"
+    if [ ! -d "${HEADERS}" ]; then
+        printf 'MiniOS i386 kernel headers are unavailable for %s\n' "${KERNEL_RELEASE}" >&2
+        return 1
+    fi
+    if ! (
+        cd "${HEADERS}"
+        gcc "${HOST_CFLAGS[@]}" -o scripts/basic/fixdep scripts/basic/fixdep.c
+        gcc "${HOST_CFLAGS[@]}" -I scripts/genksyms -c -o scripts/genksyms/genksyms.o scripts/genksyms/genksyms.c
+        gcc "${HOST_CFLAGS[@]}" -I scripts/genksyms -c -o scripts/genksyms/parse.tab.o scripts/genksyms/parse.tab.c
+        gcc "${HOST_CFLAGS[@]}" -I scripts/genksyms -c -o scripts/genksyms/lex.lex.o scripts/genksyms/lex.lex.c
+        gcc -o scripts/genksyms/genksyms scripts/genksyms/genksyms.o scripts/genksyms/parse.tab.o scripts/genksyms/lex.lex.o
+        gcc "${HOST_CFLAGS[@]}" -c -o scripts/mod/modpost.o scripts/mod/modpost.c
+        gcc "${HOST_CFLAGS[@]}" -c -o scripts/mod/file2alias.o scripts/mod/file2alias.c
+        gcc "${HOST_CFLAGS[@]}" -c -o scripts/mod/sumversion.o scripts/mod/sumversion.c
+        if [ -f scripts/mod/symsearch.c ]; then
+            gcc "${HOST_CFLAGS[@]}" -c -o scripts/mod/symsearch.o scripts/mod/symsearch.c
+            MODPOST_OBJECTS+=(scripts/mod/symsearch.o)
+        fi
+        gcc -o scripts/mod/modpost "${MODPOST_OBJECTS[@]}"
+        gcc -O2 -std=gnu11 -o scripts/sign-file scripts/sign-file.c -lcrypto
+    ); then
+        printf 'Cannot rebuild MiniOS i386 kernel header host tools\n' >&2
+        return 1
+    fi
+    for TOOL in "${HOST_TOOLS[@]}"; do
+        if ! objdump -f "${HEADERS}/${TOOL}" 2>/dev/null | grep -q 'file format elf32'; then
+            printf 'MiniOS i386 kernel header tool is not executable in i386 userspace: %s\n' "${TOOL}" >&2
+            return 1
+        fi
+    done
+}
+
+[ "${KERNEL_BUILD_DKMS}" = true ] || exit 0
+
+[ -f /packages.list ] || {
+    error "Fixed build package list not found: /packages.list"
+    exit 1
+}
+
+mapfile -t KERNEL_IMAGES < <(find /boot -maxdepth 1 -type f -name 'vmlinuz-*' -print | sort -V)
+[ "${#KERNEL_IMAGES[@]}" -eq 1 ] || {
+    error "DKMS build requires exactly one kernel image"
+    exit 1
+}
+KERNEL_RELEASE="${KERNEL_IMAGES[0]##*/vmlinuz-}"
+KERNEL_SERIES="$(kernel_release_series "${KERNEL_RELEASE}")" || {
+    error "Unable to determine kernel series from ${KERNEL_RELEASE}"
+    exit 1
+}
+KERNEL_CONFIG="/boot/config-${KERNEL_RELEASE}"
+[ -f "${KERNEL_CONFIG}" ] || {
+    error "Kernel config is missing: ${KERNEL_CONFIG}"
+    exit 1
+}
+
+MODULES_ROOT="/lib/modules/${KERNEL_RELEASE}"
+[ -d "${MODULES_ROOT}" ] || MODULES_ROOT="/usr/lib/modules/${KERNEL_RELEASE}"
+[ -d "${MODULES_ROOT}" ] || {
+    error "Kernel modules are missing for ${KERNEL_RELEASE}"
+    exit 1
+}
+
+KERNEL_CAPABILITIES=()
+kernel_has_config() {
+    grep -Eq "^$1=[ym]$" "${KERNEL_CONFIG}"
+}
+kernel_has_module() {
+    grep -Eq "[[:space:]]$1$" "${MODULES_ROOT}/modules.alias" 2>/dev/null
+}
+kernel_add_capability() {
+    KERNEL_CAPABILITIES+=("$1")
+}
+
+kernel_has_config CONFIG_AUFS_FS && kernel_add_capability aufs
+kernel_has_config CONFIG_NTFS3_FS && kernel_add_capability ntfs3
+kernel_has_config CONFIG_DEBUG_INFO_BTF_MODULES && kernel_add_capability btf_modules
+if kernel_has_config CONFIG_RTW88_8723CS || kernel_has_module rtw88_8723cs; then
+    kernel_add_capability rtw88_8723cs
+fi
+if kernel_has_config CONFIG_RTW88_8821AU || kernel_has_module rtw88_8821au; then
+    kernel_add_capability rtw88_8821au
+fi
+if kernel_has_config CONFIG_RTW88_8821CU || kernel_has_module rtw88_8821cu; then
+    kernel_add_capability rtw88_8821cu
+fi
+if kernel_has_config CONFIG_RTW88_8814AU || kernel_has_module rtw88_8814au; then
+    kernel_add_capability rtw88_8814au
+fi
+if kernel_has_config CONFIG_RTW88_8822BU || kernel_has_module rtw88_8822bu; then
+    kernel_add_capability rtw88_8822bu
+fi
+
+TMP_COMBINED="$(mktemp /tmp/combined_packages.list.XXXXXX)"
+TMP_PREREQUISITES="$(mktemp /tmp/kernel_prerequisites.list.XXXXXX)"
+TMP_DKMS_PACKAGES="$(mktemp /tmp/kernel_dkms.list.XXXXXX)"
+TMP_CONFIG="$(mktemp /tmp/kernel_build.conf.XXXXXX)"
+trap 'rm -f "${TMP_COMBINED}" "${TMP_PREREQUISITES}" "${TMP_DKMS_PACKAGES}" "${TMP_CONFIG}"' EXIT
+cp /minios_build.conf "${TMP_CONFIG}"
+{
+    printf 'KERNEL_RELEASE=%q\n' "${KERNEL_RELEASE}"
+    printf 'KERNEL_SERIES=%q\n' "${KERNEL_SERIES}"
+    printf 'KERNEL_CAPABILITIES=('
+    if [ "${#KERNEL_CAPABILITIES[@]}" -gt 0 ]; then
+        printf ' %q' "${KERNEL_CAPABILITIES[@]}"
+    fi
+    printf ' )\n'
+} >>"${TMP_CONFIG}"
+
+if [ "${KERNEL_PROVIDER}" = minios ] && [ "${DISTRIBUTION_ARCH}" = i386 ]; then
+    split_dkms_package_list /packages.list "${TMP_PREREQUISITES}" "${TMP_DKMS_PACKAGES}"
+    printf '%s\n' "${KERNEL_HEADER_METAPACKAGE}" | cat - "${TMP_PREREQUISITES}" >"${TMP_COMBINED}"
+    /condinapt -l "${TMP_COMBINED}" -c "${TMP_CONFIG}" -m /condinapt.map
+    prepare_minios_i386_headers
+    /condinapt -l "${TMP_DKMS_PACKAGES}" -c "${TMP_CONFIG}" -m /condinapt.map
+elif [ "${KERNEL_PROVIDER}" = minios ]; then
+    printf '%s\n---\n' "${KERNEL_HEADER_METAPACKAGE}" >"${TMP_COMBINED}"
+    cat /packages.list >>"${TMP_COMBINED}"
+    /condinapt -l "${TMP_COMBINED}" -c "${TMP_CONFIG}" -m /condinapt.map
+else
+    [ -e "${MODULES_ROOT}/build/Makefile" ] || {
+        error "Matching headers are unavailable for ${KERNEL_RELEASE}"
         exit 1
-    fi
-
-    # Create a temporary combined package list file.
-    TMP_COMBINED=$(mktemp /tmp/combined_packages.list.XXXXXX)
-
-    # Write the kernel headers as the first line.
-    echo "${HEADERS}" >"${TMP_COMBINED}"
-    # Append the contents of the fixed package list, preserving one package per line.
-    cat "/packages.list" >>"${TMP_COMBINED}"
-
-    # Call the external condinapt command with the combined list.
-    /condinapt -l "${TMP_COMBINED}" -c "/minios_build.conf" -m "/condinapt.map"
-    if [ $? -ne 0 ]; then
-        error "Failed to install packages."
+    }
+    /condinapt -l /packages.list -c "${TMP_CONFIG}" -m /condinapt.map
+fi
+[ -e "${MODULES_ROOT}/build/Makefile" ] || {
+    error "Matching headers are unavailable for ${KERNEL_RELEASE}"
+    exit 1
+}
+depmod "${KERNEL_RELEASE}"
+if [ "${KERNEL_PROVIDER}" = distribution ] && [ "${KERNEL_SERIES}" = 6.12 ] &&
+    [ "${DISTRIBUTION_ARCH}" != i386 ] && ! kernel_has_config CONFIG_AUFS_FS; then
+    modinfo -k "${KERNEL_RELEASE}" aufs-ng >/dev/null 2>&1 || {
+        error "aufs-ng was not installed for Linux ${KERNEL_RELEASE}"
         exit 1
-    fi
-
-    # Clean up the temporary file.
-    rm -f "${TMP_COMBINED}"
+    }
 fi

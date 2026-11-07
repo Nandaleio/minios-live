@@ -1,20 +1,32 @@
 # Debian firmware packages
-firmware-linux-free -dt=ubuntu
-firmware-linux-nonfree -dt=ubuntu
-firmware-atheros -dt=ubuntu
-firmware-iwlwifi -dt=ubuntu
-firmware-zd1211 -dt=ubuntu
-firmware-realtek -dt=ubuntu
-firmware-mediatek -dt=ubuntu +d=trixie
-firmware-bnx2 -dt=ubuntu
-firmware-brcm80211 -dt=ubuntu
-firmware-cavium -dt=ubuntu
-firmware-ipw2x00 -dt=ubuntu
-firmware-libertas -dt=ubuntu
-firmware-ti-connectivity -dt=ubuntu
-firmware-b43-installer -d=bionic -dt=ubuntu
-firmware-sof-signed -da=i386 -dt=ubuntu -{pv=minimum&de=xfce}
+firmware-linux-free -dp=ubuntu
+firmware-linux-nonfree -dp=ubuntu
+firmware-intel-graphics -dp=ubuntu +d=trixie +d=excalibur
+firmware-atheros -dp=ubuntu
+firmware-iwlwifi -dp=ubuntu
+firmware-zd1211 -dp=ubuntu
+firmware-realtek -dp=ubuntu
+firmware-mediatek -dp=ubuntu +d=trixie +d=excalibur
+firmware-bnx2 -dp=ubuntu
+firmware-brcm80211 -dp=ubuntu
+firmware-cavium -dp=ubuntu
+firmware-ipw2x00 -dp=ubuntu
+firmware-libertas -dp=ubuntu
+firmware-ti-connectivity -dp=ubuntu
+firmware-b43-installer -d=bionic -dp=ubuntu
+firmware-sof-signed -da=i386 -dp=ubuntu -{pv=minimum&de=xfce}
 
 # Ubuntu firmware packages
-linux-firmware +dt=ubuntu
-firmware-sof-signed +dt=ubuntu -da=i386
+!linux-firmware-minimal +dp=ubuntu || linux-firmware +dp=ubuntu
+linux-firmware-amd-graphics +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-amd-misc +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-broadcom-wireless +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-intel-misc +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-intel-wireless +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-marvell-wireless +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-mediatek +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-misc +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-qualcomm-wireless +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+linux-firmware-realtek +dp=ubuntu -{d=bionic|d=focal|d=jammy}
+firmware-b43-installer +dp=ubuntu -d=bionic
+firmware-sof-signed +dp=ubuntu -da=i386 -{pv=minimum&de=xfce}

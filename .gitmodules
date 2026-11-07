@@ -50,30 +50,138 @@
 [submodule "submodules/minios-kernel-manager"]
 	path = submodules/minios-kernel-manager
 	url = https://github.com/minios-linux/minios-kernel-manager.git
-[submodule "submodules/dynfilefs-app"]
-	path = submodules/dynfilefs-app
-	url = https://github.com/minios-linux/dynfilefs-app.git
 [submodule "submodules/minios-session-manager"]
 	path = submodules/minios-session-manager
 	url = https://github.com/minios-linux/minios-session-manager
 [submodule "submodules/flux.minios.dev"]
 	path = submodules/flux.minios.dev
 	url = https://github.com/minios-linux/flux.minios.dev
-[submodule "submodules/minios-dracut"]
-	path = submodules/minios-dracut
-	url = https://github.com/minios-linux/minios-dracut
 [submodule "submodules/ncurses-menu-app"]
 	path = submodules/ncurses-menu-app
 	url = https://github.com/minios-linux/ncurses-menu-app
 [submodule "submodules/mini-commander-app"]
 	path = submodules/mini-commander-app
 	url = https://github.com/minios-linux/mini-commander-app
-[submodule "submodules/minios-translations"]
-	path = submodules/minios-translations
-	url = https://github.com/minios-linux/minios-translations.git
 [submodule "submodules/minios-store"]
 	path = submodules/minios-store
 	url = https://github.com/minios-linux/minios-store.git
 [submodule "submodules/lokit"]
 	path = submodules/lokit
 	url = https://github.com/minios-linux/lokit
+[submodule "submodules/dynfilefs"]
+	path = submodules/dynfilefs
+	url = https://github.com/minios-linux/dynfilefs.git
+	branch = master
+[submodule "submodules/minios-artwork"]
+	path = submodules/minios-artwork
+	url = https://github.com/minios-linux/minios-artwork.git
+	branch = master
+[submodule "submodules/python-minios-security"]
+	path = submodules/python-minios-security
+	url = https://github.com/minios-linux/python-minios-security.git
+	branch = master
+[submodule "submodules/partclone-nbd"]
+	path = submodules/partclone-nbd
+	url = https://github.com/minios-linux/partclone-nbd.git
+	branch = master
+[submodule "submodules/transume"]
+	path = submodules/transume
+	url = https://github.com/minios-linux/transume.git
+	branch = master
+[submodule "submodules/minios-gui"]
+	path = submodules/minios-gui
+	url = https://github.com/minios-linux/minios-gui.git
+	branch = master
+[submodule "submodules/python-dataclasses"]
+	path = submodules/python-dataclasses
+	url = https://github.com/minios-linux/python-dataclasses.git
+	branch = master
+[submodule "submodules/minios-module-manager"]
+	path = submodules/minios-module-manager
+	url = https://github.com/minios-linux/minios-module-manager.git
+[submodule "submodules/minios-image-builder"]
+	path = submodules/minios-image-builder
+	url = https://github.com/minios-linux/minios-image-builder.git
+[submodule "submodules/minios-help"]
+	path = submodules/minios-help
+	url = https://github.com/minios-linux/minios-help.git
+[submodule "submodules/realtek-rtl8188eus-dkms"]
+	path = submodules/realtek-rtl8188eus-dkms
+	url = https://github.com/minios-linux/realtek-rtl8188eus-dkms.git
+	branch = master
+[submodule "submodules/realtek-rtl8814au-dkms"]
+	path = submodules/realtek-rtl8814au-dkms
+	url = https://github.com/minios-linux/realtek-rtl8814au-dkms.git
+	branch = master
+[submodule "submodules/realtek-rtl8821au-dkms"]
+	path = submodules/realtek-rtl8821au-dkms
+	url = https://github.com/minios-linux/realtek-rtl8821au-dkms.git
+	branch = master
+[submodule "submodules/realtek-rtl88xxau-dkms"]
+	path = submodules/realtek-rtl88xxau-dkms
+	url = https://github.com/minios-linux/realtek-rtl88xxau-dkms.git
+	branch = master
+[submodule "submodules/aufs-ng"]
+	path = submodules/aufs-ng
+	url = https://github.com/minios-linux/aufs-ng.git
+[submodule "submodules/gtkask"]
+	path = submodules/gtkask
+	url = https://github.com/minios-linux/gtkask.git
+[submodule "submodules/minios-thunar-integration"]
+	path = submodules/minios-thunar-integration
+	url = https://github.com/minios-linux/minios-thunar-integration.git
+[submodule "submodules/fluxbox-flux"]
+	path = submodules/fluxbox-flux
+	url = https://github.com/minios-linux/fluxbox-flux.git
+[submodule "submodules/dynblk"]
+	path = submodules/dynblk
+	url = https://github.com/minios-linux/dynblk.git
+	branch = master
+[submodule "submodules/xfwm4-gl"]
+	path = submodules/xfwm4-gl
+	url = https://github.com/minios-linux/xfwm4-gl.git
+	branch = main
+[submodule "submodules/macbook-charge-limit"]
+	path = submodules/macbook-charge-limit
+	url = https://github.com/minios-linux/macbook-charge-limit.git
+	branch = master
+[submodule "submodules/greybird-minios"]
+	path = submodules/greybird-minios
+	url = https://github.com/minios-linux/greybird-minios.git
+	branch = master
+[submodule "submodules/fonts-inter-minimal"]
+	path = submodules/fonts-inter-minimal
+	url = https://github.com/minios-linux/fonts-inter-minimal.git
+	branch = master
+[submodule "submodules/fonts-jetbrains-mono-minimal"]
+	path = submodules/fonts-jetbrains-mono-minimal
+	url = https://github.com/minios-linux/fonts-jetbrains-mono-minimal.git
+	branch = master
+[submodule "submodules/xfce4-minios-tasklist-plugin"]
+	path = submodules/xfce4-tasklist-minios-plugin
+	url = https://github.com/minios-linux/xfce4-minios-tasklist-plugin.git
+	branch = master
+[submodule "submodules/xfce4-minios-showdesktop-plugin"]
+	path = submodules/xfce4-showdesktop-minios-plugin
+	url = https://github.com/minios-linux/xfce4-minios-showdesktop-plugin.git
+	branch = master
+[submodule "submodules/opendrop-rs"]
+	path = submodules/opendrop-rs
+	url = https://github.com/minios-linux/opendrop-rs.git
+	branch = main
+[submodule "submodules/xfdesktop-minios"]
+	path = submodules/xfdesktop-minios
+	url = https://github.com/minios-linux/xfdesktop-minios.git
+	branch = minios
+[submodule "submodules/xfce4-settings-minios"]
+	path = submodules/xfce4-settings-minios
+	url = https://github.com/minios-linux/xfce4-settings-minios.git
+	branch = master
+[submodule "submodules/matebook-e-dsi"]
+	path = submodules/matebook-e-dsi
+	url = https://github.com/minios-linux/matebook-e-dsi.git
+	branch = 6.12
+[submodule "submodules/matebook-e-cameras"]
+	path = submodules/matebook-e-cameras
+	url = https://github.com/minios-linux/matebook-e-cameras.git
+	branch = master

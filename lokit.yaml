@@ -1,0 +1,437 @@
+# lokit configuration for minios-live
+#
+# yaml-language-server: $schema=https://raw.githubusercontent.com/minios-linux/lokit/master/lokit.schema.json
+
+languages: [de, es, fr, id, it, pt, pt-BR, ru]
+source_lang: en
+
+terminology:
+  from:
+    - lokit-terms.yaml
+
+targets:
+  # --- minios-live own translations ---
+
+  - name: minios-live
+    format: gettext
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-thunar-actions
+    format: gettext
+    root: submodules/minios-thunar-integration
+    from:
+      - bin/minios-thunar-actions
+      - bin/minios-thunar-uca-sync
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-live-manpages
+    format: po4a
+    root: manpages
+    from:
+      - po4a.cfg
+
+  - name: grub-theme
+    format: gettext
+    root: linux-live/bootfiles/boot/grub
+    from:
+      - po/en_US.po
+    template: po/messages.pot
+    to: po/{lang}.po
+    languages: [de_DE, es_ES, fr_FR, id_ID, it_IT, pt_PT, pt_BR, ru_RU]
+
+  # --- submodule: minios-tools ---
+
+  - name: minios-tools
+    format: gettext
+    root: submodules/minios-tools
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  # --- submodule: flux-tools ---
+
+  - name: flux-tools
+    format: gettext
+    root: submodules/flux-tools
+    from:
+      - bin
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  # --- submodule: driveutility ---
+
+  - name: driveutility
+    format: gettext
+    root: submodules/driveutility
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  # --- submodule: minios-installer ---
+
+  - name: minios-installer
+    format: gettext
+    root: submodules/minios-installer
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-installer-manpages
+    format: po4a
+    root: submodules/minios-installer/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: minios-configurator ---
+
+  - name: minios-configurator
+    format: gettext
+    root: submodules/minios-configurator
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-configurator-manpages
+    format: po4a
+    root: submodules/minios-configurator/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: minios-kernel-manager ---
+
+  - name: minios-kernel-manager
+    format: gettext
+    root: submodules/minios-kernel-manager
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-kernel-manager-manpages
+    format: po4a
+    root: submodules/minios-kernel-manager/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: minios-session-manager ---
+
+  - name: minios-session-manager
+    format: gettext
+    root: submodules/minios-session-manager
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-session-manager-manpages
+    format: po4a
+    root: submodules/minios-session-manager/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+    prompt: |
+      Translate MiniOS man pages while preserving all groff markup, command names, options, paths, placeholders, and technical identifiers exactly.
+      Use ordinary ASCII spaces only. Never insert non-breaking spaces or escaped representations of non-breaking spaces.
+      Preserve every backslash escape byte-for-byte with exactly the same number of backslashes.
+
+  # --- submodule: minios-module-manager ---
+
+  - name: minios-module-manager
+    format: gettext
+    root: submodules/minios-module-manager
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-module-manager-desktop
+    format: desktop
+    root: submodules/minios-module-manager
+    to: share/applications/minios-module-manager.desktop
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  - name: minios-module-manager-manpages
+    format: po4a
+    root: submodules/minios-module-manager/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: minios-help ---
+
+  - name: minios-help
+    format: gettext
+    root: submodules/minios-help
+    template: po/messages.pot
+    to: po/{lang}.po
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  - name: minios-help-desktop
+    format: desktop
+    root: submodules/minios-help
+    to: share/applications/minios-help.desktop
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: minios-image-builder ---
+
+  - name: minios-image-builder
+    format: gettext
+    root: submodules/minios-image-builder
+    except:
+      - cli/**/*
+      - manpages/**/*
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-image-builder-help
+    format: markdown
+    root: submodules/minios-image-builder/help/en
+    from:
+      - '**/*.md'
+    to: '../{lang}/{path}'
+    languages: [de, es, fr, id, it, pt, pt-BR, ru]
+
+  - name: minios-image-compose
+    format: gettext
+    root: submodules/minios-image-builder/cli
+    from:
+      - bin
+      - lib
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: minios-image-builder-desktop
+    format: desktop
+    root: submodules/minios-image-builder
+    to: share/applications/minios-image-builder.desktop
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  - name: minios-image-builder-policy
+    format: polkit
+    root: submodules/minios-image-builder
+    to: share/polkit-1/actions/org.minios.imagebuilder.read-live-config.policy
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  - name: minios-image-builder-manpages
+    format: po4a
+    root: submodules/minios-image-builder/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+    prompt: |
+      Translate MiniOS man pages while preserving all groff markup, command names, options, paths, placeholders, and technical identifiers exactly.
+      Use ordinary ASCII spaces only. Never insert non-breaking spaces or escaped representations of non-breaking spaces.
+      Preserve every backslash escape byte-for-byte with exactly the same number of backslashes. Never translate groff escapes such as \f[B], \f[R], \[en], \[aq], \[dq], or \[rs].
+
+  # --- submodule: minios-live-config manpages ---
+
+  - name: minios-live-config
+    format: po4a
+    root: submodules/minios-live-config/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, ja, pt, pt_BR, ru]
+
+  # --- submodule: documentation site (markdown) ---
+
+  - name: docs
+    format: markdown
+    root: submodules/docs
+    ignored_patterns:
+      - '^fm:updated$'
+      - '^fm:program_commits\.'
+      - '^fm:layout$'
+      - '^fm:hero\.actions\.[0-9]+\.theme$'
+    from:
+      - index.md
+      - development/**/*.md
+      - getting-started/**/*.md
+      - installing-minios/**/*.md
+      - maintenance-and-recovery/**/*.md
+      - preparing-and-customizing/**/*.md
+      - reference/**/*.md
+      - using-minios/**/*.md
+    to: translations/{lang}/{path}
+    languages: [de, es, fr, id, it, pt-BR, ru]
+
+  - name: docs-ui
+    format: vue-i18n
+    root: submodules/docs
+    from:
+      - .vitepress/i18n/en.json
+    to: .vitepress/i18n/{lang}.json
+    languages: [de, es, fr, id, it, pt-BR, ru]
+    prompt: |
+      Translate short UI labels for the MiniOS documentation website.
+      Stay close to the English source meaning; do not invent a different product, website, app, company, or footer.
+      Preserve HTML tags, links, URLs, placeholders, punctuation, and copyright years exactly.
+      Use concise, natural documentation/navigation terminology for the target language.
+
+  # --- submodule: welcome screen (i18next) ---
+
+  - name: minios-welcome
+    format: i18next
+    root: submodules/minios-welcome
+    from:
+      - html/i18n/en.json
+    to: html/i18n/{lang}.json
+    languages: [de, es, fr, id, it, pt, pt-BR, ru]
+
+  - name: minios-welcome-manpages
+    format: po4a
+    root: submodules/minios-welcome/manpages
+    from:
+      - po4a.cfg
+    languages: [de, es, fr, id, it, pt, pt_BR, ru]
+
+  # --- submodule: website (i18next) ---
+
+  - name: minios-linux.github.io
+    include_by_default: false
+    format: i18next
+    root: submodules/minios-linux.github.io
+    from:
+      - public/translations/en.json
+    to: public/translations/{lang}.json
+    languages: [de, es, fr, id, it, pt-BR, ru]
+
+  # --- submodule: website blog posts (markdown) ---
+
+  - name: minios-linux.github.io-blog-posts
+    include_by_default: false
+    format: markdown
+    root: submodules/minios-linux.github.io
+    from:
+      - data/blog/posts/{id}.md
+    to: data/blog/posts/translations/{id}.{lang}.md
+    languages: [de, es, fr, id, it, pt-BR, ru]
+
+  # --- submodule: flux website (json) ---
+
+  - name: flux-website
+    include_by_default: false
+    format: i18next
+    root: submodules/flux.minios.dev
+    from:
+      - translations/en.json
+    to: translations/{lang}.json
+    languages: [de, es, fr, id, it, pt-BR, pt-PT, ru]
+
+  # --- submodule: minios-store application ---
+
+  - name: minios-store
+    format: gettext
+    root: submodules/minios-store
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  # --- submodule: minios-store website (i18next) ---
+
+  - name: minios-store-website
+    format: i18next
+    root: submodules/minios-store/web
+    from:
+      - public/translations/en.json
+    to: public/translations/{lang}.json
+    languages: [de, es, fr, id, it, pt-BR, ru]
+
+  # --- submodule: minios-store recipes (json) ---
+
+  - name: minios-store-recipes
+    include_by_default: false
+    format: vue-i18n
+    root: submodules/minios-store/web/public/data
+    to: recipe-translations/{lang}/{id}.json
+    languages: [de, es, fr, id, it, pt-BR, ru]
+    from:
+      index: recipes.json
+      records: "$"
+      key: id
+      fields: [name, description, longDescription]
+
+  # --- Xfce components: stable translation identities ---
+
+  - name: xfce4-minios-tasklist-plugin
+    format: gettext
+    root: submodules/xfce4-tasklist-minios-plugin
+    from:
+      - po/strings.c
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: xfce4-minios-showdesktop-plugin
+    format: gettext
+    root: submodules/xfce4-showdesktop-minios-plugin
+    from:
+      - po/strings.c
+    template: po/messages.pot
+    to: po/{lang}.po
+
+  - name: xfwm4-gl
+    format: gettext
+    root: submodules/xfwm4-gl
+    from:
+      - helper-dialog/helper-dialog.c
+      - settings-dialogs/tweaks-settings.c
+      - settings-dialogs/workspace-settings.c
+      - settings-dialogs/xfce-wm-settings.desktop.in
+      - settings-dialogs/xfce-wmtweaks-settings.desktop.in
+      - settings-dialogs/xfce-workspaces-settings.desktop.in
+      - settings-dialogs/xfwm4-dialog.glade
+      - settings-dialogs/xfwm4-settings.c
+      - settings-dialogs/xfwm4-tweaks-dialog.glade
+      - settings-dialogs/xfwm4-workspace-dialog.glade
+      - src/client.c
+      - src/compositor.c
+      - src/cycle.c
+      - src/display.c
+      - src/event_filter.c
+      - src/events.c
+      - src/focus.c
+      - src/frame.c
+      - src/hints.c
+      - src/icons.c
+      - src/keyboard.c
+      - src/main.c
+      - src/menu.c
+      - src/misc.c
+      - src/moveresize.c
+      - src/mypixmap.c
+      - src/mywindow.c
+      - src/netwm.c
+      - src/parserc.c
+      - src/placement.c
+      - src/poswin.c
+      - src/screen.c
+      - src/session.c
+      - src/settings.c
+      - src/spinning_cursor.c
+      - src/stacking.c
+      - src/startup_notification.c
+      - src/tabwin.c
+      - src/terminate.c
+      - src/transients.c
+      - src/ui_style.c
+      - src/wireframe.c
+      - src/workspaces.c
+      - src/xsync.c
+    template: po/xfwm4.pot
+    to: po/{lang}.po
+
+  - name: xfdesktop-minios
+    format: gettext
+    root: submodules/xfdesktop-minios
+    from:
+      - common
+      - settings
+      - src
+    template: po/xfdesktop.pot
+    to: po/{lang}.po
+
+  - name: xfce4-settings-minios
+    format: gettext
+    root: submodules/xfce4-settings-minios
+    keywords: [_, N_, 'C_:1c,2', 'ngettext:1,2', 'pgettext:1c,2', 'npgettext:1c,2,3', gettext, eval_gettext]
+    from:
+      - common
+      - dialogs
+      - xfce4-settings-editor
+      - xfce4-settings-manager
+      - xfsettingsd
+    template: po/xfce4-settings.pot
+    to: po/{lang}.po

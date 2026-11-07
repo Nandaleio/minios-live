@@ -12,6 +12,7 @@ Options:
   -o,  --output <OUTPUT FILE>            Output initramfs file path
   -n,  --network                         Enable network support
   -c,  --cloud                           Enable cloud support
+  --crypt                                Include encrypted persistence support
   -d,  --debug                           Enable debug mode
   -h,  --help                            Display this help message and exit
 
@@ -29,6 +30,7 @@ OUTPUT=""
 NETWORK="false"
 CLOUD="false"
 DEBUG="false"
+CRYPT="false"
 
 # Parse options
 while [[ $# -gt 0 ]]; do
@@ -51,6 +53,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     -d | --debug)
         DEBUG="true"
+        shift
+        ;;
+    --crypt)
+        CRYPT="true"
         shift
         ;;
     -h | --help)
@@ -82,6 +88,53 @@ if ! command -v dracut >/dev/null 2>&1; then
     exit 1
 fi
 
+KERNEL_CONFIG="/boot/config-$KERNEL"
+if [ ! -r "$KERNEL_CONFIG" ]; then
+    echo "E: Kernel configuration not found: $KERNEL_CONFIG" >&2
+    exit 1
+fi
+
+if grep -q '^CONFIG_RD_ZSTD=y$' "$KERNEL_CONFIG" && command -v zstd >/dev/null 2>&1; then
+    COMPRESSION="zstd"
+elif grep -q '^CONFIG_RD_GZIP=y$' "$KERNEL_CONFIG" && command -v gzip >/dev/null 2>&1; then
+    COMPRESSION="gzip"
+elif grep -q '^CONFIG_RD_XZ=y$' "$KERNEL_CONFIG" && command -v xz >/dev/null 2>&1; then
+    COMPRESSION="xz"
+else
+    echo "E: No initramfs compression is supported by both kernel $KERNEL and the build environment" >&2
+    exit 1
+fi
+
+if [ "$CRYPT" = "true" ]; then
+    if ! compgen -G "/lib/modules/$KERNEL/kernel/drivers/md/dm-crypt.*" >/dev/null &&
+        ! grep -q '^CONFIG_DM_CRYPT=y$' "/boot/config-$KERNEL" 2>/dev/null; then
+        echo "E: --crypt requires dm-crypt support in kernel $KERNEL" >&2
+        exit 1
+    fi
+fi
+
+DRACUT_BASE="$(mktemp -d /tmp/minios-dracut.XXXXXX)" || exit 1
+trap 'rm -rf "$DRACUT_BASE"' EXIT
+trap 'exit 1' HUP INT TERM
+cp -a /usr/lib/dracut/. "$DRACUT_BASE/"
+export dracutbasedir="$DRACUT_BASE"
+
+DRACUT_INSTALL="$DRACUT_BASE/dracut-install"
+DRACUT_INSTALL_REAL="${DRACUT_INSTALL}.minios-real"
+if grep -q '^CONFIG_CRYPTO_CRC32C=y$' "$KERNEL_CONFIG" &&
+    [ -x "$DRACUT_INSTALL" ] && [ ! -e "$DRACUT_INSTALL_REAL" ]; then
+    mv "$DRACUT_INSTALL" "$DRACUT_INSTALL_REAL"
+    cat >"$DRACUT_INSTALL" <<'EOF'
+#!/bin/bash
+args=()
+for arg in "$@"; do
+    [ "$arg" = "crc32c" ] || args+=("$arg")
+done
+exec "${0}.minios-real" "${args[@]}"
+EOF
+    chmod 755 "$DRACUT_INSTALL"
+fi
+
 # Check if kernel modules exist
 if [ ! -d "/lib/modules/$KERNEL" ]; then
     echo "E: Kernel modules not found for version $KERNEL" >&2
@@ -98,7 +151,7 @@ else
     exit 1
 fi
 
-DRACUT_MODULES_DIR="/usr/lib/dracut/modules.d"
+DRACUT_MODULES_DIR="$DRACUT_BASE/modules.d"
 if [ -d "$DRACUT_MODULES_DIR" ]; then
     rm -rf "$DRACUT_MODULES_DIR/90minios" "$DRACUT_MODULES_DIR/99minios-cleanup"
     cp -r "$DRACUT_MOS/90minios" "$DRACUT_MODULES_DIR/"
@@ -109,8 +162,12 @@ fi
 
 # Build filesystem driver list for --add-drivers
 AVAILABLE_DRIVERS=""
-REQUIRED_DRIVERS="squashfs overlay loop zram ext4 vfat"
-OPTIONAL_DRIVERS="aufs ntfs ntfs3 exfat"
+REQUIRED_DRIVERS="squashfs overlay loop zram ext4 vfat isofs ahci"
+OPTIONAL_DRIVERS="aufs aufs-ng ntfs ntfs3 exfat"
+
+if [ "$CLOUD" = "true" ]; then
+    REQUIRED_DRIVERS="$REQUIRED_DRIVERS virtio_pci virtio_net"
+fi
 
 for driver in $REQUIRED_DRIVERS $OPTIONAL_DRIVERS; do
     if modinfo -k "$KERNEL" "$driver" >/dev/null 2>&1; then
@@ -118,9 +175,14 @@ for driver in $REQUIRED_DRIVERS $OPTIONAL_DRIVERS; do
     fi
 done
 
+if [ "$CRYPT" = "true" ] && modinfo -k "$KERNEL" dm-crypt >/dev/null 2>&1; then
+    AVAILABLE_DRIVERS="$AVAILABLE_DRIVERS dm-crypt"
+fi
+
 # Export flags for use in installkernel()
 export MINIOS_CLOUD="$CLOUD"
 export MINIOS_NETWORK="$NETWORK"
+export MINIOS_CRYPT="$CRYPT"
 
 # Prepare dracut command
 DRACUT_CMD=(
@@ -128,10 +190,29 @@ DRACUT_CMD=(
     --force
     --conf "$(dirname "$0")/90-minios.conf"
     --kver "$KERNEL"
+    --compress "$COMPRESSION"
     --add-drivers "$AVAILABLE_DRIVERS"
     --strip
     --hardlink
 )
+
+# Bundled musl executables have their own complete library closure. Add them
+# after Dracut's lazy dependency scan, which resolves against the build root
+# and cannot resolve this private loader (or may use a same-named host binary).
+unset MINIOS_CRYPT_PAYLOAD_DIR
+if [ "$CRYPT" = true ]; then
+    CRYPT_PAYLOAD="${DRACUT_MOS%/dracut-mos}/livekit-mos"
+    [ "$DRACUT_MOS" != /run/initramfs/dracut-mos ] || CRYPT_PAYLOAD=/run/initramfs
+    mkdir -p "$DRACUT_BASE/bundled-crypt"
+    if (
+        source "$DRACUT_MOS/90minios/module-setup.sh"
+        initdir="$DRACUT_BASE/bundled-crypt"
+        install_bundled_crypt "$CRYPT_PAYLOAD"
+    ); then
+        export MINIOS_CRYPT_PAYLOAD_DIR="$DRACUT_BASE/bundled-crypt"
+        DRACUT_CMD+=(--include "$MINIOS_CRYPT_PAYLOAD_DIR" /)
+    fi
+fi
 
 # Add debug mode
 if [ "$DEBUG" = "true" ]; then
@@ -150,6 +231,8 @@ echo "  Kernel: $KERNEL"
 echo "  Output: $OUTPUT"
 echo "  Network: $NETWORK"
 echo "  Cloud: $CLOUD"
+echo "  Crypt: $CRYPT"
+echo "  Compression: $COMPRESSION"
 echo "  Debug: $DEBUG"
 echo
 

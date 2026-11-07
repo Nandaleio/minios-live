@@ -5,13 +5,14 @@ set -o pipefail # exit on pipeline error
 set -u          # treat unset variable as error
 
 . /minioslib
+console_colors
 . /minios_build.conf
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 [ "${DISTRIBUTION}" = "bionic" ] && PACKAGE="firefox" || PACKAGE="firefox-esr"
 
 # Conditional statements for package installation
-if [ "${DISTRIBUTION_TYPE}" = "ubuntu" ]; then
+if [ "${DISTRIBUTION_PROFILE}" = "ubuntu" ] && [ "${DISTRIBUTION}" != "bionic" ]; then
     # Check if software-properties-common is available in repositories
     apt-get update
     if apt-cache show software-properties-common >/dev/null 2>&1; then
@@ -42,6 +43,26 @@ fi
 # Conditional Desktop environment settings
 if [[ "${DESKTOP_ENVIRONMENT}" == *"xfce"* ]] && [ "${PACKAGE_VARIANT}" != "puzzle" ]; then
     mkdir -p /etc/skel/.config/xfce4
+
+    # Debian 13 / Devuan 6 use the MiniOS tasklist. Firefox is added here,
+    # after the base desktop layout has created the other pinned applications.
+    if { [ "${DISTRIBUTION}" = "trixie" ] || [ "${DISTRIBUTION}" = "excalibur" ]; } \
+        && [ -f /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ]; then
+        PANEL_XML=/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+        FIREFOX_DESKTOP="${PACKAGE}.desktop"
+        PINNED_XPATH="/channel/property[@name='plugins']/property[@value='minios-tasklist']/property[@name='pinned-apps']"
+        if [ "$(xmlstarlet sel -t -v "count(${PINNED_XPATH})" "${PANEL_XML}")" -gt 0 ] \
+            && [ "$(xmlstarlet sel -t -v "count(${PINNED_XPATH}/value[@value='${FIREFOX_DESKTOP}'])" "${PANEL_XML}")" -eq 0 ]; then
+            xmlstarlet ed -L \
+                -i "${PINNED_XPATH}/value[1]" \
+                -t elem -n value -v "" \
+                -i "${PINNED_XPATH}/value[1]" \
+                -t attr -n type -v string \
+                -i "${PINNED_XPATH}/value[1]" \
+                -t attr -n value -v "${FIREFOX_DESKTOP}" \
+                "${PANEL_XML}"
+        fi
+    fi
     if grep -q "xterm" /etc/skel/.config/xfce4/helpers.rc; then
         cat <<EOF >/etc/skel/.config/xfce4/helpers.rc
 TerminalEmulator=xterm
@@ -64,7 +85,7 @@ fi
 
 echo "application/pdf=${PACKAGE}.desktop" >>/usr/share/applications/mimeapps.list
 
-if [ "${DISTRIBUTION_TYPE}" = "debian" ] && [[ "${DESKTOP_ENVIRONMENT}" == *"xfce"* ]]; then
+if [ "${DISTRIBUTION_PROFILE}" = "debian" ] && [[ "${DESKTOP_ENVIRONMENT}" == *"xfce"* ]]; then
     sed -i "s,^Exec=/usr/lib,Exec=env XDG_CURRENT_DESKTOP=XFCE /usr/lib,g" /usr/share/applications/${PACKAGE}.desktop
 elif [ "${DESKTOP_ENVIRONMENT}" == "flux" ]; then
     FILES="/usr/share/applications/firefox.desktop /usr/share/applications/firefox-esr.desktop"

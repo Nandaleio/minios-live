@@ -14,6 +14,7 @@ Below is the basic structure and purpose of each element inside the module direc
 <MODULE_NAME>/
 ├── skip_conditions.conf              # (optional) Skipping conditions file
 ├── rootcopy-install/                 # (optional) Files copied before installation
+│   ├── .minios-ownership             # (optional) Explicit non-root ownership manifest
 │   └── ...                           # Can contain a nested directory tree
 ├── install                           # Installation script in chroot
 │   └── packages.list                 # List of basic packages for installation
@@ -22,6 +23,7 @@ Below is the basic structure and purpose of each element inside the module direc
 ├── build                             # Module build script inside chroot
 │   └── is_dkms_build                 # DKMS build flag (empty file)
 ├── rootcopy-postinstall/             # (optional) Files copied after post-install
+│   ├── .minios-ownership             # (optional) Explicit non-root ownership manifest
 │   └── ...                           # Same as rootcopy-install
 ├── postinstall                       # (optional) Post-installation script in chroot
 
@@ -37,7 +39,22 @@ Below is the basic structure and purpose of each element inside the module direc
 
 * **rootcopy-install/**: Folder for files that need to be copied directly to the root system inside chroot before (`install`).
 
+  Files in `rootcopy-install/` are copied as build templates. The host checkout owner is not preserved, so files normally become `root:root` in the target tree. If a file or directory needs a non-root owner, declare it explicitly in `rootcopy-install/.minios-ownership`:
+
+  ```text
+  owner:group relative/path
+  ```
+
+  Paths are relative to the `rootcopy-install/` directory and must remain inside that tree without `..` components or symlink traversal. The manifest is applied by the build host immediately after the tree is copied, so named owners and groups are resolved using the build host's account database. Use numeric `UID:GID` values for target-only accounts, or set ownership from `install`/`postinstall` inside the chroot. Moving a manifest to `rootcopy-postinstall/` does not change name resolution. The manifest itself is not copied to the target tree.
+
 * **install**: Executable module installation script. Copies files, installs dependencies, configures the environment. Runs first.
+
+  Shared build functions belong in `linux-live/minioslib` and are available to
+  installers through `. /minioslib`. The builder stages the current library in
+  chroot and removes it before compression. Do not put build-only helpers in
+  `rootcopy-install` or `rootcopy-postinstall`: those trees define files installed
+  in the runtime system. Runtime session helpers belong there only when they are
+  actually needed by the running system.
 
 * **packages.list**: APT package list for installation using `condinapt`.
 
@@ -49,7 +66,24 @@ Below is the basic structure and purpose of each element inside the module direc
 
 * **rootcopy-postinstall/**: Folder for files that need to be copied directly to the root system inside chroot before (`postinstall`). Used for replacing files from installed packages.
 
+  Ownership rules are the same as for `rootcopy-install/`. Use `rootcopy-postinstall/.minios-ownership` for explicit non-root owners.
+
 * **postinstall**: Script executed after main installation and cleanup. Used for additional configurations (modifying configuration files and other actions where cleanup is not required).
+
+### Live User Groups
+
+The live user does not exist while a module is being built. If software in the
+module requires supplementary groups, do not create a boot service that guesses
+the user name or UID. Instead, install a `*.groups` declaration under:
+
+```text
+/usr/share/live/config/user-default-groups.d/
+```
+
+Group names may be separated by whitespace; blank lines and `#` comments are
+ignored. `minios-live-config` adds the live user to existing declared groups
+after user creation and reapplies declarations on later boots, so modules added
+to an existing persistent session are handled as well.
 
 ## Adding a Module to the Distribution
 

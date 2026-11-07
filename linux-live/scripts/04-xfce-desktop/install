@@ -5,46 +5,42 @@ set -o pipefail # exit on pipeline error
 set -u          # treat unset variable as error
 
 . /minioslib
+console_colors
 . /minios_build.conf
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-case "$DISTRIBUTION" in
-trixie | sid)
-    rm -rf /usr/share/backgrounds
-    rm -rf /usr/share/pixmaps
-    : 'rm -f /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-    cat <<EOF >/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
-<?xml version="1.1" encoding="UTF-8"?>
+rm -rf /usr/share/backgrounds
 
-<channel name="xfce4-desktop" version="1.0">
-  <property name="desktop-icons" type="empty">
-    <property name="file-icons" type="empty">
-      <property name="show-removable" type="bool" value="false"/>
-      <property name="show-home" type="bool" value="true"/>
-      <property name="show-filesystem" type="bool" value="false"/>
-      <property name="show-trash" type="bool" value="true"/>
-      <property name="show-mounts" type="bool" value="false"/>
-    </property>
-  </property>
-  <property name="last-settings-migration-version" type="uint" value="1"/>
-</channel>
-EOF'
-    ;;
-*)
-    rm -rf /usr/share/backgrounds
-    rm -rf /usr/share/pixmaps
-    ;;
-esac
-
-/condinapt -l "${SCRIPT_DIR}/packages.list" -c "${SCRIPT_DIR}/minios_build.conf" -m "${SCRIPT_DIR}/condinapt.map"
-if [ $? -ne 0 ]; then
+if ! /condinapt -l "${SCRIPT_DIR}/packages.list" -c "${SCRIPT_DIR}/minios_build.conf" -m "${SCRIPT_DIR}/condinapt.map"; then
     echo "Failed to install packages."
     exit 1
 fi
 
+# Remove packaged distribution wallpapers while preserving MiniOS packages and rootcopy assets.
+for WALLPAPER_DIR in \
+    /usr/share/backgrounds \
+    /usr/share/xfce4/backdrops \
+    /usr/share/wallpapers; do
+    [ -d "$WALLPAPER_DIR" ] || continue
+
+    while IFS= read -r -d '' WALLPAPER; do
+        WALLPAPER_OWNER="$(dpkg-query -S "$WALLPAPER" 2>/dev/null || true)"
+        [ -n "$WALLPAPER_OWNER" ] || continue
+
+        case "$WALLPAPER_OWNER" in
+        minios*) continue ;;
+        esac
+
+        rm -f -- "$WALLPAPER"
+    done < <(
+        find "$WALLPAPER_DIR" -mindepth 1 \
+            \( -type f -o -type l \) -print0
+    )
+done
+
 # Clean up excessive locales for Ubuntu
-if [ "$DISTRIBUTION_TYPE" = "ubuntu" ]; then
+if [ "$DISTRIBUTION_PROFILE" = "ubuntu" ]; then
     if [ -d /var/lib/locales/supported.d ]; then
         if [ "$MULTILINGUAL" = "false" ]; then
             # Keep only the locale specified in LOCALE variable
@@ -99,10 +95,6 @@ if [ -f "/usr/share/applications/xfce4-clipman-settings.desktop" ]; then
     sed -i "29i Comment[ru]=Настройте свой буфер обмена" /usr/share/applications/xfce4-clipman-settings.desktop
 fi
 
-mv /usr/bin/thunar /usr/bin/thunar-bin
-mv /usr/bin/thunar.sh /usr/bin/thunar
-chmod +x /usr/bin/thunar
-
 if [ -f /usr/bin/connman-gtk ]; then
     if [ ! -d /etc/skel/.config/autostart ]; then
         mkdir -p /etc/skel/.config/autostart
@@ -141,16 +133,16 @@ fi
 XML_XSETTINGS=/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 XML_XFWM4=/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
 
-# Set FontName to "Inter 10"
+# Set FontName to "Inter 9"
 xmlstarlet ed -L \
     -u "//property[@name='FontName']/@type" -v "string" \
-    -i "//property[@name='FontName']" -t attr -n "value" -v "Inter 10" \
+    -i "//property[@name='FontName']" -t attr -n "value" -v "Inter 9" \
     "$XML_XSETTINGS"
 
-# Set MonospaceFontName to "JetBrains Mono 10"
+# Set MonospaceFontName to "JetBrains Mono 9"
 xmlstarlet ed -L \
     -u "//property[@name='MonospaceFontName']/@type" -v "string" \
-    -i "//property[@name='MonospaceFontName']" -t attr -n "value" -v "JetBrains Mono 10" \
+    -i "//property[@name='MonospaceFontName']" -t attr -n "value" -v "JetBrains Mono 9" \
     "$XML_XSETTINGS"
 
 # Enable antialiasing
@@ -164,9 +156,9 @@ xmlstarlet ed -L \
     -u "//property[@name='HintStyle']/@value" -v "hintfull" \
     "$XML_XSETTINGS"
 
-# Replace "Sans Bold 10" with "Inter Bold 10" in xfwm4.xml
+# Replace "Sans Bold 10" with "Inter Bold 9" in xfwm4.xml
 xmlstarlet ed -L \
-    -u "//property[contains(@value,'Sans Bold 10')]/@value" -v "Inter Bold 10" \
+    -u "//property[contains(@value,'Sans Bold 10')]/@value" -v "Inter Bold 9" \
     "$XML_XFWM4"
 
 if pkg_is_installed "xfce4-terminal"; then
@@ -370,13 +362,118 @@ else
       <property name="digital-time-format" type="string" value="%R"/>
       <property name="digital-layout" type="uint" value="1"/>
       <property name="timezone" type="string" value=""/>
-      <property name="digital-time-font" type="string" value="Inter Bold 12"/>
+      <property name="digital-time-font" type="string" value="Inter 10"/>
+      <property name="digital-date-font" type="string" value="Inter 8"/>
     </property>
     <property name="plugin-14" type="string" value="showdesktop"/>
   </property>
 </channel>
 
 EOF
+fi
+
+# Debian 13 / Devuan 6: use the MiniOS panel layout and panel plugins.
+# Keep only intentional defaults here; runtime history/known-item lists are not seeded.
+if [ "$DISTRIBUTION" = "trixie" ] || [ "$DISTRIBUTION" = "excalibur" ]; then
+    cat <<'MINIOS_PANEL_XML' >/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-panel" version="1.0">
+  <property name="configver" type="int" value="2"/>
+  <property name="panels" type="array">
+    <value type="int" value="1"/>
+    <property name="panel-1" type="empty">
+      <property name="position" type="string" value="p=8;x=512;y=752"/>
+      <property name="length" type="uint" value="100"/>
+      <property name="position-locked" type="bool" value="true"/>
+      <property name="size" type="uint" value="48"/>
+      <property name="background-alpha" type="uint" value="90"/>
+      <property name="mode" type="uint" value="0"/>
+      <property name="enter-opacity" type="uint" value="100"/>
+      <property name="leave-opacity" type="uint" value="100"/>
+      <property name="plugin-ids" type="array">
+        <value type="int" value="1"/>
+        <value type="int" value="2"/>
+        <value type="int" value="3"/>
+        <value type="int" value="4"/>
+        <value type="int" value="5"/>
+        <value type="int" value="6"/>
+        <value type="int" value="7"/>
+        <value type="int" value="8"/>
+        <value type="int" value="9"/>
+        <value type="int" value="10"/>
+        <value type="int" value="11"/>
+        <value type="int" value="12"/>
+        <value type="int" value="13"/>
+      </property>
+      <property name="icon-size" type="uint" value="32"/>
+    </property>
+    <property name="dark-mode" type="bool" value="false"/>
+  </property>
+  <property name="plugins" type="empty">
+    <property name="plugin-1" type="string" value="whiskermenu"/>
+    <property name="plugin-2" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-3" type="string" value="minios-tasklist">
+      <property name="expand" type="bool" value="true"/>
+      <property name="show-handle" type="bool" value="false"/>
+      <property name="flat-buttons" type="bool" value="true"/>
+      <property name="show-labels" type="bool" value="false"/>
+      <property name="grouping" type="uint" value="1"/>
+      <property name="include-all-workspaces" type="bool" value="true"/>
+      <property name="show-wireframes" type="bool" value="false"/>
+      <property name="pinned-apps" type="array">
+        <value type="string" value="thunar.desktop"/>
+        <value type="string" value="xfce4-terminal.desktop"/>
+      </property>
+      <property name="sort-order" type="uint" value="4"/>
+    </property>
+    <property name="plugin-4" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+      <property name="expand" type="bool" value="false"/>
+    </property>
+    <property name="plugin-5" type="string" value="xkb">
+      <property name="display-type" type="uint" value="2"/>
+      <property name="display-name" type="uint" value="1"/>
+      <property name="group-policy" type="uint" value="0"/>
+    </property>
+    <property name="plugin-6" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-7" type="string" value="systray">
+      <property name="icon-size" type="int" value="22"/>
+      <property name="square-icons" type="bool" value="true"/>
+      <property name="hidden-legacy-items" type="array"/>
+      <property name="hide-new-items" type="bool" value="false"/>
+      <property name="single-row" type="bool" value="false"/>
+    </property>
+    <property name="plugin-8" type="string" value="pulseaudio">
+      <property name="enable-keyboard-shortcuts" type="bool" value="true"/>
+    </property>
+    <property name="plugin-9" type="string" value="power-manager-plugin"/>
+    <property name="plugin-10" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-11" type="string" value="clock">
+      <property name="digital-format" type="string" value="%_H:%M"/>
+      <property name="digital-time-format" type="string" value="%R"/>
+      <property name="digital-layout" type="uint" value="1"/>
+      <property name="timezone" type="string" value=""/>
+      <property name="digital-time-font" type="string" value="Inter 10"/>
+      <property name="digital-date-font" type="string" value="Inter 8"/>
+    </property>
+    <property name="plugin-12" type="string" value="separator">
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-13" type="string" value="minios-showdesktop">
+      <property name="show-on-hover" type="bool" value="false"/>
+      <property name="show-icon" type="bool" value="false"/>
+      <property name="strip-style" type="uint" value="0"/>
+    </property>
+  </property>
+</channel>
+MINIOS_PANEL_XML
 fi
 
 if ! pkg_is_installed "xfce4-terminal" >/dev/null 2>&1 && pkg_is_installed "xfce4-screenshooter" >/dev/null 2>&1; then
@@ -598,7 +695,7 @@ if ! pkg_is_installed "xfce4-whiskermenu-plugin"; then
     sed -i 's/NoDisplay=true/NoDisplay=false/' /etc/skel/.local/share/desktop-directories/xfce-settings.directory
 fi
 
-if [ $DISTRIBUTION_TYPE = "debian" ] && [[ $DESKTOP_ENVIRONMENT == *"xfce"* ]]; then
+if [ "$DISTRIBUTION_PROFILE" = "debian" ] && [[ "$DESKTOP_ENVIRONMENT" == *"xfce"* ]]; then
     if [ "$DISTRIBUTION" = "buster" ]; then
         sed -i "s/exo-open/env XDG_CURRENT_DESKTOP=XFCE exo-open/g" /usr/share/applications/exo-web-browser.desktop
     else
@@ -611,82 +708,138 @@ if ! pkg_is_installed "xfce4-terminal"; then
     update-alternatives --set x-terminal-emulator /usr/bin/xterm >/dev/null 2>&1
 fi
 
-rm -f /usr/share/backgrounds/xfce/*
-rm -f /usr/share/backgrounds/greybird.svg
-rm -f /usr/share/wallpapers/*
-if [ ! -d /usr/share/backgrounds/xfce ]; then
-    mkdir -p /usr/share/backgrounds/xfce
-fi
-
-find /usr/share/backgrounds/ -maxdepth 1 -type f ! -name "MiniOS5*" -delete
-
-set_wallpaper() {
+# Manual fallback only. Edition packages own the normal wallpaper setup.
+apply_wallpaper_fallback() {
+write_xfce4_desktop_xml_modern() {
     local WALLPAPER=$1
+    local XML_FILE="/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
+    local MONITOR WORKSPACE
+    local -a MONITORS=(
+        Virtual-1 Virtual-2 Virtual1
+        eDP eDP-1
+        DSI-1 DSI-2
+        HDMI-A-0 HDMI-A-1 HDMI-1 HDMI-2
+        DP-1 DP-2 DP-3
+        LVDS-1 DVI-I-1 DVI-I-2
+    )
 
-    case "$DISTRIBUTION" in
-    #bookworm | trixie | sid)
-    *)
-        # Update link to reference selected wallpaper
-        rm -f /usr/share/backgrounds/minios-wallpaper.jpg
-        ln -s "/usr/share/backgrounds/MiniOS5-wallpaper-${WALLPAPER}.jpg" /usr/share/backgrounds/minios-wallpaper.jpg
-        ;;
-        #*)
-        # Update desktop XML to reference selected wallpaper directly
-        #    local XML_FILE="/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
-        #    xmlstarlet ed -L \
-        #        -u "//property[@name='image-path']/@value" \
-        #        -v "/usr/share/backgrounds/MiniOS5-wallpaper-${WALLPAPER}.jpg" \
-        #        "$XML_FILE"
-        #    ;;
-    esac
+    {
+        cat <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
 
-    # Remove other wallpaper files
-    for OTHER_WALLPAPER in Minimum Flux Standard Toolbox Ultra; do
-        if [[ "$OTHER_WALLPAPER" != "$WALLPAPER" ]]; then
-            rm -f "/usr/share/backgrounds/MiniOS5-wallpaper-$OTHER_WALLPAPER.jpg"
-        fi
-    done
+<channel name="xfce4-desktop" version="1.0">
+  <property name="desktop-icons" type="empty">
+    <property name="style" type="int" value="2"/>
+    <property name="file-icons" type="empty">
+      <property name="show-home" type="bool" value="true"/>
+      <property name="show-filesystem" type="bool" value="false"/>
+      <property name="show-removable" type="bool" value="false"/>
+      <property name="show-trash" type="bool" value="true"/>
+    </property>
+    <property name="icon-size" type="uint" value="48"/>
+    <property name="tooltip-size" type="double" value="64.000000"/>
+  </property>
+  <property name="backdrop" type="empty">
+    <property name="screen0" type="empty">
+EOF
+        for MONITOR in "${MONITORS[@]}"; do
+            printf '      <property name="monitor%s" type="empty">\n' "$MONITOR"
+            for WORKSPACE in 0 1 2 3; do
+                cat <<EOF
+        <property name="workspace${WORKSPACE}" type="empty">
+          <property name="last-image" type="string" value="${WALLPAPER}"/>
+          <property name="image-style" type="int" value="5"/>
+        </property>
+EOF
+            done
+            echo '      </property>'
+        done
+        cat <<'EOF'
+    </property>
+  </property>
+  <property name="last-settings-migration-version" type="uint" value="1"/>
+  <property name="desktop-menu" type="empty">
+    <property name="show" type="bool" value="false"/>
+  </property>
+</channel>
+EOF
+    } >"$XML_FILE"
 }
 
-if [ "$PACKAGE_VARIANT" = "minimum" ] && [ "$DESKTOP_ENVIRONMENT" = "flux" ]; then
-    set_wallpaper "Flux"
-elif [ "$PACKAGE_VARIANT" = "minimum" ]; then
-    set_wallpaper "Minimum"
-elif [ "$PACKAGE_VARIANT" = "standard" ]; then
-    set_wallpaper "Standard"
-elif [ "$PACKAGE_VARIANT" = "toolbox" ]; then
-    set_wallpaper "Toolbox"
-elif [ "$PACKAGE_VARIANT" = "ultra" ]; then
-    set_wallpaper "Ultra"
+write_xfce4_desktop_xml_legacy() {
+    local WALLPAPER=$1
+    local XML_FILE="/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml"
+
+    [ -f "$XML_FILE" ] || return 0
+
+    xmlstarlet ed -L \
+        -u "//property[@name='image-path']/@value" \
+        -v "$WALLPAPER" \
+        "$XML_FILE"
+}
+
+    local WALLPAPER_VARIANT WALLPAPER OTHER_WALLPAPER
+    local -a KEEP_FILES
+
+    rm -f /usr/share/backgrounds/xfce/*
+    rm -f /usr/share/backgrounds/greybird.svg
+    rm -f /usr/share/wallpapers/*
+    mkdir -p /usr/share/backgrounds/xfce
+    find /usr/share/backgrounds/ -maxdepth 1 -type f ! -name "minios6-*" -delete
+
+    if [ "$PACKAGE_VARIANT" = "minimum" ] && [ "$DESKTOP_ENVIRONMENT" = "flux" ]; then
+        WALLPAPER_VARIANT="flux"
+    elif [ "$PACKAGE_VARIANT" = "minimum" ]; then
+        WALLPAPER_VARIANT="minimum"
+    elif [ "$PACKAGE_VARIANT" = "standard" ]; then
+        WALLPAPER_VARIANT="standard"
+    elif [ "$PACKAGE_VARIANT" = "toolbox" ]; then
+        WALLPAPER_VARIANT="toolbox"
+    elif [ "$PACKAGE_VARIANT" = "ultra" ]; then
+        WALLPAPER_VARIANT="ultra"
+    else
+        WALLPAPER_VARIANT="sea-logo"
+    fi
+
+    WALLPAPER="/usr/share/backgrounds/minios6-${WALLPAPER_VARIANT}.jpg"
+    case "$DISTRIBUTION" in
+    resolute | trixie | excalibur | forky | sid)
+        write_xfce4_desktop_xml_modern "$WALLPAPER"
+        ;;
+    *)
+        write_xfce4_desktop_xml_legacy "$WALLPAPER"
+        ;;
+    esac
+
+    for OTHER_WALLPAPER in minimum flux standard toolbox ultra; do
+        if [ "$OTHER_WALLPAPER" != "$WALLPAPER_VARIANT" ]; then
+            rm -f "/usr/share/backgrounds/minios6-$OTHER_WALLPAPER.jpg"
+        fi
+    done
+
+    find /usr/share/backgrounds/ -maxdepth 1 -type f ! -name "minios6-*" -delete
+    if [ "$PACKAGE_VARIANT" = "minimum" ]; then
+        if [ "$DESKTOP_ENVIRONMENT" = "flux" ]; then
+            KEEP_FILES=("minios6-flux.jpg" "minios6-jungle.jpg")
+        else
+            KEEP_FILES=("minios6-minimum.jpg" "minios6-jungle.jpg")
+        fi
+        find /usr/share/backgrounds -type f \
+            ! -name "${KEEP_FILES[0]}" ! -name "${KEEP_FILES[1]}" -delete
+    fi
+}
+
+if [ "$PACKAGE_VARIANT" = "ultra" ]; then
     xmlstarlet ed -L \
         -u "//property[@name='ThemeName']/@value" \
-        -v "Greybird-dark" \
+        -v "Greybird-MiniOS-dark" \
         /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
     xmlstarlet ed -L \
         -u "//property[@name='theme']/@value" \
-        -v "Greybird-dark" \
+        -v "Greybird-MiniOS-dark" \
         /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
-else
-    set_wallpaper "sea"
 fi
 
-find /usr/share/backgrounds/ -maxdepth 1 -type f ! -name "MiniOS5*" ! -delete
-
-# if we're NOT running flux, and we're on the minimum variant,
-# delete everything except the two images we want to keep
-if [ "$PACKAGE_VARIANT" = "minimum" ]; then
-    case "$DESKTOP_ENVIRONMENT" in
-    "flux")
-        KEEP_FILES=("MiniOS5-wallpaper-Flux.jpg" "MiniOS5-background-jungle.jpg")
-        ;;
-    *)
-        KEEP_FILES=("MiniOS5-wallpaper-Minimum.jpg" "MiniOS5-background-jungle.jpg")
-        ;;
-    esac
-
-    find /usr/share/backgrounds -type f ! -name "${KEEP_FILES[0]}" ! -name "${KEEP_FILES[1]}" -delete
-fi
-
-if [ $PACKAGE_VARIANT != "minimum" ]; then
+if [ "$PACKAGE_VARIANT" != "minimum" ]; then
     rm -f /usr/share/applications/taskmanager.desktop
 fi

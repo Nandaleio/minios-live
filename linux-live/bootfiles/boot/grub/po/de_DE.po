@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: MiniOS\n"
+"Project-Id-Version: minios-live 6.0.0-1\n"
 "Report-Msgid-Bugs-To: support@minios.dev\n"
-"POT-Creation-Date: 2025-08-12 15:00+0000\n"
-"PO-Revision-Date: 2025-08-12 15:00+0000\n"
+"POT-Creation-Date: 2026-09-19 02:33+0300\n"
+"PO-Revision-Date: 2026-09-18 23:33+0000\n"
 "Last-Translator: crims0n <crims0n@minios.dev>\n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -19,20 +19,20 @@ msgstr ""
 msgid "MiniOS"
 msgstr "MiniOS"
 
-msgid "Resume previous session"
-msgstr "Vorherige Sitzung fortsetzen"
+msgid "Start MiniOS"
+msgstr "MiniOS starten"
 
 msgid "Start a new session"
 msgstr "Neue Sitzung beginnen"
 
-msgid "Choose session during startup"
-msgstr "Sitzung beim Start wählen"
+msgid "Choose a saved session"
+msgstr "Gespeicherte Sitzung auswählen"
 
-msgid "Fresh start"
-msgstr "Neustart"
+msgid "Start without saving"
+msgstr "Ohne Speichern starten"
 
-msgid "Copy to RAM"
-msgstr "In RAM kopieren"
+msgid "Run from RAM"
+msgstr "Aus dem RAM ausführen"
 
 msgid "Loading kernel and ramdisk..."
 msgstr "Kernel und Ramdisk werden geladen..."
@@ -51,3 +51,69 @@ msgstr "[Tab] Befehlszeile >"
 
 msgid "Choose Language"
 msgstr "Sprache wählen"
+
+msgid "Help"
+msgstr "Hilfe"
+
+msgid "[Enter] Select  [F1] Help  [F2] Language  [E] Edit  [C] Console"
+msgstr "[Enter] Auswählen  [F1] Hilfe  [F2] Sprache  [E] Bearbeiten  [C] Konsole"
+
+msgid "[Enter] Apply language  [Esc] Back without changes"
+msgstr "[Enter] Sprache anwenden  [Esc] Zurück ohne Änderungen"
+
+msgid "MiniOS boot modes"
+msgstr "MiniOS-Modi"
+
+msgid "Resume the last saved session, if available. Recommended for normal use."
+msgstr "Setzt die zuletzt gespeicherte Sitzung fort, falls verfügbar. Empfohlen für den normalen Gebrauch."
+
+msgid "Set up a new saved session. Existing sessions are kept."
+msgstr "Richtet eine neue gespeicherte Sitzung ein. Bestehende Sitzungen bleiben erhalten."
+
+msgid "Choose which saved session to restore during startup."
+msgstr "Wählen Sie aus, welche gespeicherte Sitzung beim Start wiederhergestellt werden soll."
+
+msgid "Start clean, without restoring a session or saving changes."
+msgstr "Starten Sie ohne Wiederherstellung einer Sitzung oder das Speichern von Änderungen."
+
+msgid "Copy the system to RAM before starting. Needs extra RAM and startup time."
+msgstr "Kopiert das System vor dem Start auf RAM. Benötigt zusätzlichen RAM und mehr Startzeit."
+
+msgid "A saved session keeps your settings and files between restarts."
+msgstr "Eine gespeicherte Sitzung bewahrt Ihre Einstellungen und Dateien zwischen Neustarts."
+
+msgid "Saving requires writable storage."
+msgstr "Zum Speichern wird ein beschreibbarer Speicher benötigt."
+
+msgid "[F2] changes the menu and system language, keyboard and time zone defaults."
+msgstr "[F2] ändert die Standardwerte für Menü- und Systemsprache, Tastatur und Zeitzone."
+
+msgid "[E] edits boot parameters; [C] opens the GRUB command line."
+msgstr "[E] bearbeitet Boot-Parameter; [C] öffnet die GRUB-Befehlszeile."
+
+msgid "Press [Esc] to return to the boot menu."
+msgstr "Drücken Sie [Esc], um zum Boot-Menü zurückzukehren."
+
+msgid "Starting MiniOS in # second{,s} ..."
+msgstr "Starte MiniOS in # Sekunde{,n} ..."
+
+msgid "[Enter] Start  [F1] Help  [F2] Language  [Tab] Edit options"
+msgstr "[Enter] Start  [F1] Hilfe  [F2] Sprache  [Tab] Optionen bearbeiten"
+
+msgid "[Tab] edits boot parameters for the selected mode."
+msgstr "Mit [Tab] bearbeiten Sie die Boot-Parameter für den ausgewählten Modus."
+
+msgid "Press any key to return to the menu."
+msgstr "Drücken Sie eine beliebige Taste, um zum Menü zurückzukehren."
+
+#~ msgid "F2 changes the menu and system language, keyboard and time zone defaults."
+#~ msgstr "Mit F2 ändern Sie Menü- und Systemsprache, Tastatur- und Zeitzoneneinstellungen."
+
+#~ msgid "E edits boot parameters; C opens the GRUB command line."
+#~ msgstr "E bearbeitet Boot-Parameter; C öffnet die GRUB-Kommandozeile."
+
+#~ msgid "Press Esc to return to the boot menu."
+#~ msgstr "Drücken Sie Esc, um zum Boot-Menü zurückzukehren."
+
+#~ msgid "Tab edits boot parameters for the selected mode."
+#~ msgstr "Mit Tab können die Boot-Parameter für den ausgewählten Modus bearbeitet werden."
